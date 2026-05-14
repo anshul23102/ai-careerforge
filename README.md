@@ -1,57 +1,64 @@
-# AI CareerForge - Interview Readiness Assessment
+<div align="center">
 
-![AI CareerForge](https://img.shields.io/badge/AI%20CareerForge-Interview%20Ready-8b5cf6?style=for-the-badge)
-![Next.js](https://img.shields.io/badge/Next.js-16.2-black?style=for-the-badge&logo=next.js)
-![Groq AI](https://img.shields.io/badge/Groq-AI%20Powered-orange?style=for-the-badge)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
+# ⚡ AI CareerForge
 
-> Know if you're interview-ready - in under 2 minutes, powered by Groq AI.
+### Know if you're interview-ready — in under 2 minutes.
 
----
+[![Live Demo](https://img.shields.io/badge/🟢_Live_Demo-ai--careerforge.vercel.app-6eb4ff?style=for-the-badge)](https://ai-careerforge.vercel.app)
+[![Next.js](https://img.shields.io/badge/Next.js-16.2-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
+[![Groq AI](https://img.shields.io/badge/Groq-Llama_3.3_70B-f97316?style=for-the-badge)](https://groq.com)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
+[![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com)
 
-## Live Demo
-
-🟢 Live: [https://ai-careerforge.vercel.app](https://ai-careerforge.vercel.app)
-
----
-
-## What Is AI CareerForge?
-
-AI CareerForge is an AI-powered Interview Readiness Assessment tool that analyzes your profile across **4 critical dimensions** - Technical Skills, Resume Quality, Communication, and Portfolio Strength - and delivers a personalized score, strengths, improvement areas, and a concrete action plan.
-
-Built for engineers at every stage: freshers, interns, and experienced developers looking to crack interviews at top tech companies.
+</div>
 
 ---
 
-## Features
+## 🎯 What is AI CareerForge?
 
-- **4-Dimension Analysis** - Technical, Resume, Communication, Portfolio
-- **AI-Powered by Groq** - Uses Llama 3.3 70B to deeply evaluate your profile
-- **Personalized Action Plan** - Week-by-week roadmap tailored to your gaps
-- **Visual Dashboard** - Animated score gauge, radar chart, progress bars
-- **Multi-Step Form** - Clean, guided 4-step assessment with real-time validation
-- **Instant Results** - Get your score in seconds, no account needed
-- **Responsive & Immersive** - Dark glassmorphism UI with animations
+**AI CareerForge** is an AI-powered Interview Readiness Assessment tool that evaluates your profile across **4 critical dimensions** and delivers a personalised score from 0–100, with specific strengths, actionable improvements, and a week-by-week action plan.
+
+Built for engineers at every stage — freshers, interns, and experienced developers — who want to know exactly where they stand before walking into their next interview.
+
+> No signup. No credit card. Results in under 2 minutes. Completely free.
 
 ---
 
-## Tech Stack
+## ✨ Features
+
+| | Feature | Description |
+|---|---|---|
+| 🧠 | **4-Dimension AI Analysis** | Technical Skills, Resume Quality, Communication, Portfolio Strength |
+| 🤖 | **Real Groq AI** | Llama 3.3 70B analyzes your full profile with deep context |
+| 🐙 | **Live GitHub Fetch** | Pulls your real repos, languages, stars & bio via GitHub API |
+| 🌐 | **Portfolio Scraping** | Reads your actual portfolio site and factors it into scoring |
+| 📊 | **Visual Dashboard** | Animated score gauge, radar chart, dimension bars with insights |
+| 🗓️ | **Personalised Action Plan** | Week-by-week roadmap tailored to your specific gaps |
+| 🔗 | **Share Your Score** | LinkedIn, X, copy link, or download a PNG score card |
+| 🎨 | **Premium Dark UI** | Apple-inspired design with interactive cursor mesh background |
+| ⚡ | **Instant Results** | Groq inference in seconds — no waiting, no account needed |
+
+---
+
+## 🛠️ Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 16.2 (App Router) |
-| Language | TypeScript 5 |
-| Styling | Tailwind CSS v4 |
-| UI Animations | Framer Motion v12 |
-| Charts | Recharts v3 |
-| Icons | Lucide React v1.16 |
-| AI | Groq - Llama 3.3 70B (groq-sdk) |
+| ⚛️ Framework | Next.js 16.2 (App Router) |
+| 📘 Language | TypeScript 5 |
+| 🎨 Styling | Tailwind CSS v4 |
+| ✨ Animations | Framer Motion v12 |
+| 📈 Charts | Recharts v3 |
+| 🎯 Icons | Lucide React |
+| 🤖 AI Model | Groq — Llama 3.3 70B |
+| 🖼️ Canvas FX | Custom Spring Physics Mesh |
+| 🚀 Deployment | Vercel |
 
 ---
 
-## Local Setup
+## 🚀 Getting Started
 
-### 1. Clone the repository
+### 1. Clone the repo
 
 ```bash
 git clone https://github.com/anshul23102/ai-careerforge.git
@@ -66,88 +73,105 @@ npm install
 
 ### 3. Add your Groq API key
 
-Create a `.env.local` file in the project root:
+Create a `.env.local` file in the root:
 
 ```env
 GROQ_API_KEY=your_groq_api_key_here
 ```
 
-Get your free API key at [console.groq.com](https://console.groq.com) - no credit card required.
+> 🔑 Get your **free** API key at [console.groq.com](https://console.groq.com) — no credit card required.
 
-### 4. Run the development server
+### 4. Run locally
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000)
 
 ---
 
-## How It Works
+## 🔄 How It Works
 
 ```
-Step 1: Fill Your Profile (~30 sec)
-  └─ Name, email, target role, experience level, target companies
-
-Step 2: Quick Skills Assessment (~60 sec)
-  └─ Rate DSA, System Design, Coding, Projects, CS Fundamentals
-  └─ Paste your resume / describe your background
-
-Step 3: Portfolio & Communication
-  └─ GitHub, LinkedIn, Portfolio URLs
-  └─ Communication self-rating
-
-→ Groq AI analyzes everything and returns your score
-→ Redirect to personalized dashboard with charts and action plan
+┌─────────────────────────────────────────────────────────────┐
+│                     USER JOURNEY                            │
+├─────────────────────────────────────────────────────────────┤
+│  Step 1 (~30s)  │  Profile: name, role, experience, goals   │
+│  Step 2 (~45s)  │  Resume: paste text or describe yourself  │
+│  Step 3 (~30s)  │  Skills: rate DSA, design, coding 1–10    │
+│  Step 4 (~15s)  │  Portfolio: GitHub, LinkedIn, site URLs   │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+                             ▼
+        ┌────────────────────────────────────┐
+        │  POST /api/analyze                 │
+        │  ├── Fetch GitHub API (live data)  │
+        │  ├── Scrape portfolio site         │
+        │  └── Call Groq Llama 3.3 70B       │
+        └────────────────────────────────────┘
+                             │
+                             ▼
+        ┌────────────────────────────────────┐
+        │  Results Dashboard                 │
+        │  ├── 0–100 readiness score         │
+        │  ├── 4-dimension breakdown         │
+        │  ├── Strengths & improvements      │
+        │  └── Week-by-week action plan      │
+        └────────────────────────────────────┘
 ```
 
 ---
 
-## Architecture Overview
+## 🏗️ Project Structure
 
 ```
-app/
-  page.tsx              - Landing page (Server Component)
-  layout.tsx            - Root layout with Geist font
-  globals.css           - Global styles + Tailwind v4
-  assess/
-    page.tsx            - Assessment page (imports client component)
-  results/
-    page.tsx            - Results page (Client Component, reads URL params)
-  api/
-    analyze/
-      route.ts          - POST handler → Groq API → AnalysisResult JSON
-
-components/
-  AssessmentForm.tsx    - 4-step form with framer-motion transitions
-  ResultsDashboard.tsx  - Animated results with Recharts radar chart
-
-lib/
-  types.ts              - AssessmentData & AnalysisResult TypeScript types
+ai-careerforge/
+├── app/
+│   ├── page.tsx                 # Landing page
+│   ├── layout.tsx               # Root layout (Space Grotesk font)
+│   ├── globals.css              # Design system + Tailwind v4
+│   ├── assess/
+│   │   └── page.tsx             # Assessment page
+│   ├── results/
+│   │   └── page.tsx             # Results page (reads URL params)
+│   └── api/
+│       └── analyze/
+│           └── route.ts         # AI analysis endpoint
+│
+├── components/
+│   ├── AssessmentForm.tsx       # 4-step form with animations
+│   ├── ResultsDashboard.tsx     # Score + charts + action plan
+│   ├── InteractiveMesh.tsx      # Canvas cursor-reactive mesh
+│   └── StarField.tsx            # Parallax star background
+│
+└── lib/
+    └── types.ts                 # AssessmentData & AnalysisResult types
 ```
 
-**Data flow:**
-1. Form submits `AssessmentData` to `POST /api/analyze`
-2. Route handler calls Groq (Llama 3.3 70B) with a structured prompt
-3. AI returns `AnalysisResult` as JSON
-4. Result is base64-encoded and passed as URL param to `/results`
-5. Results page decodes and renders the dashboard
+---
+
+## 🤖 AI Prompt Architecture
+
+The analysis prompt sent to Groq includes:
+
+- ✅ Candidate profile (role, experience, target companies)
+- ✅ Full resume text
+- ✅ Self-rated skill scores (calibrated by experience level)
+- ✅ **Live GitHub data** — bio, repos, languages, stars (fetched via GitHub API)
+- ✅ **Portfolio content** — scraped from the actual website
+- ✅ Communication self-rating
+
+The AI returns structured JSON scored across 4 dimensions with strengths, prioritised improvements, and a phased action plan — all personalised with specific details from your real profile.
 
 ---
 
-## Screenshots
+## 🎥 Demo Video
 
-_Add screenshots here_
-
----
-
-## Demo Video
-
-🎥 [Watch Demo](https://drive.google.com/your-demo-link)
+[![Watch Demo](https://img.shields.io/badge/▶_Watch_Demo-Google_Drive-red?style=for-the-badge&logo=googledrive)](https://drive.google.com/your-demo-link)
 
 ---
 
-## License
+## 📄 License
 
-MIT © 2025 AI CareerForge
+MIT © 2026 AI CareerForge
