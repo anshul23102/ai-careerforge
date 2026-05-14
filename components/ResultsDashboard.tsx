@@ -186,9 +186,9 @@ export default function ResultsDashboard({ result, candidateName }: ResultsDashb
 
     // Background
     const bg = ctx.createLinearGradient(0, 0, 1200, 630)
-    bg.addColorStop(0, '#05050f')
+    bg.addColorStop(0, '#07080f')
     bg.addColorStop(0.5, '#0d0520')
-    bg.addColorStop(1, '#05050f')
+    bg.addColorStop(1, '#07080f')
     ctx.fillStyle = bg
     ctx.fillRect(0, 0, 1200, 630)
 
@@ -297,7 +297,7 @@ export default function ResultsDashboard({ result, candidateName }: ResultsDashb
   }
 
   return (
-    <div className="min-h-screen bg-[#05050f]">
+    <div className="min-h-screen bg-[#07080f]">
       {/* Home nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
         <Link
