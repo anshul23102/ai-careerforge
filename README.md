@@ -172,12 +172,6 @@ The AI returns structured JSON scored across 4 dimensions with strengths, priori
 
 <br/>
 
-## 🎥 Demo Video
-
-[![Watch Demo](https://img.shields.io/badge/▶_Watch_Demo-Google_Drive-red?style=for-the-badge&logo=googledrive)](https://drive.google.com/file/d/16M0Xc2oA_Ks7xEg63MDiZm49EFZn52Jg/view?usp=sharing)
-
-<br/>
-
 ## 📄 License
 
 MIT © 2026 AI CareerForge
