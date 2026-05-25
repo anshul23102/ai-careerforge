@@ -2,7 +2,7 @@
 
 # ⚡ AI CareerForge
 
-### Know if you're interview-ready — in under 2 minutes.
+### Know if you're interview-ready in under 2 minutes.
 
 [![Live Demo](https://img.shields.io/badge/🟢_Live_Demo-ai--careerforge.vercel.app-6eb4ff?style=for-the-badge)](https://ai-careerforge.vercel.app)
 [![Next.js](https://img.shields.io/badge/Next.js-16.2-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
@@ -12,17 +12,23 @@
 
 </div>
 
----
+<br/>
 
 ## 🎯 What is AI CareerForge?
 
-**AI CareerForge** is an AI-powered Interview Readiness Assessment tool that evaluates your profile across **4 critical dimensions** and delivers a personalised score from 0–100, with specific strengths, actionable improvements, and a week-by-week action plan.
+**AI CareerForge** is an AI-powered Interview Readiness Assessment tool that evaluates your profile across **4 critical dimensions** and delivers a personalised score from 0 to 100, with specific strengths, actionable improvements, and a week-by-week action plan.
 
-Built for engineers at every stage — freshers, interns, and experienced developers — who want to know exactly where they stand before walking into their next interview.
+Built for engineers at every stage: freshers, interns, and experienced developers who want to know exactly where they stand before walking into their next interview.
 
 > No signup. No credit card. Results in under 2 minutes. Completely free.
 
----
+<br/>
+
+## 📸 Screenshots
+
+<!-- Add screenshots here -->
+
+<br/>
 
 ## ✨ Features
 
@@ -30,15 +36,15 @@ Built for engineers at every stage — freshers, interns, and experienced develo
 |---|---|---|
 | 🧠 | **4-Dimension AI Analysis** | Technical Skills, Resume Quality, Communication, Portfolio Strength |
 | 🤖 | **Real Groq AI** | Llama 3.3 70B analyzes your full profile with deep context |
-| 🐙 | **Live GitHub Fetch** | Pulls your real repos, languages, stars & bio via GitHub API |
+| 🐙 | **Live GitHub Fetch** | Pulls your real repos, languages, stars and bio via GitHub API |
 | 🌐 | **Portfolio Scraping** | Reads your actual portfolio site and factors it into scoring |
 | 📊 | **Visual Dashboard** | Animated score gauge, radar chart, dimension bars with insights |
 | 🗓️ | **Personalised Action Plan** | Week-by-week roadmap tailored to your specific gaps |
 | 🔗 | **Share Your Score** | LinkedIn, X, copy link, or download a PNG score card |
 | 🎨 | **Premium Dark UI** | Apple-inspired design with interactive cursor mesh background |
-| ⚡ | **Instant Results** | Groq inference in seconds — no waiting, no account needed |
+| ⚡ | **Instant Results** | Groq inference in seconds. No waiting, no account needed |
 
----
+<br/>
 
 ## 🛠️ Tech Stack
 
@@ -54,7 +60,7 @@ Built for engineers at every stage — freshers, interns, and experienced develo
 | 🖼️ Canvas FX | Custom Spring Physics Mesh |
 | 🚀 Deployment | Vercel |
 
----
+<br/>
 
 ## 🚀 Getting Started
 
@@ -79,7 +85,7 @@ Create a `.env.local` file in the root:
 GROQ_API_KEY=your_groq_api_key_here
 ```
 
-> 🔑 Get your **free** API key at [console.groq.com](https://console.groq.com) — no credit card required.
+> 🔑 Get your **free** API key at [console.groq.com](https://console.groq.com). No credit card required.
 
 ### 4. Run locally
 
@@ -89,7 +95,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
----
+<br/>
 
 ## 🔄 How It Works
 
@@ -99,7 +105,7 @@ Open [http://localhost:3000](http://localhost:3000)
 ├─────────────────────────────────────────────────────────────┤
 │  Step 1 (~30s)  │  Profile: name, role, experience, goals   │
 │  Step 2 (~45s)  │  Resume: paste text or describe yourself  │
-│  Step 3 (~30s)  │  Skills: rate DSA, design, coding 1–10    │
+│  Step 3 (~30s)  │  Skills: rate DSA, design, coding 1 to 10 │
 │  Step 4 (~15s)  │  Portfolio: GitHub, LinkedIn, site URLs   │
 └────────────────────────────┬────────────────────────────────┘
                              │
@@ -114,14 +120,14 @@ Open [http://localhost:3000](http://localhost:3000)
                              ▼
         ┌────────────────────────────────────┐
         │  Results Dashboard                 │
-        │  ├── 0–100 readiness score         │
+        │  ├── 0 to 100 readiness score      │
         │  ├── 4-dimension breakdown         │
-        │  ├── Strengths & improvements      │
+        │  ├── Strengths and improvements    │
         │  └── Week-by-week action plan      │
         └────────────────────────────────────┘
 ```
 
----
+<br/>
 
 ## 🏗️ Project Structure
 
@@ -149,7 +155,7 @@ ai-careerforge/
     └── types.ts                 # AssessmentData & AnalysisResult types
 ```
 
----
+<br/>
 
 ## 🤖 AI Prompt Architecture
 
@@ -162,15 +168,15 @@ The analysis prompt sent to Groq includes:
 - ✅ **Portfolio content** — scraped from the actual website
 - ✅ Communication self-rating
 
-The AI returns structured JSON scored across 4 dimensions with strengths, prioritised improvements, and a phased action plan — all personalised with specific details from your real profile.
+The AI returns structured JSON scored across 4 dimensions with strengths, prioritised improvements, and a phased action plan. All personalised with specific details from your real profile.
 
----
+<br/>
 
 ## 🎥 Demo Video
 
 [![Watch Demo](https://img.shields.io/badge/▶_Watch_Demo-Google_Drive-red?style=for-the-badge&logo=googledrive)](https://drive.google.com/file/d/16M0Xc2oA_Ks7xEg63MDiZm49EFZn52Jg/view?usp=sharing)
 
----
+<br/>
 
 ## 📄 License
 
