@@ -25,8 +25,16 @@ Built for engineers at every stage: freshers, interns, and experienced developer
 <br/>
 
 ## 📸 Screenshots
+<img width="1420" height="702" alt="Screenshot 2026-05-14 at 9 52 15 PM" src="https://github.com/user-attachments/assets/3e948476-9d0e-43b8-bffb-4293c4426149" />
 
-<!-- Add screenshots here -->
+<img width="1406" height="702" alt="Screenshot 2026-05-14 at 9 52 33 PM" src="https://github.com/user-attachments/assets/32c1f82e-213d-4aef-a238-daae9ecf3dee" />
+
+<img width="1447" height="700" alt="Screenshot 2026-05-14 at 9 56 03 PM" src="https://github.com/user-attachments/assets/6ee5d26a-f146-4661-99a7-1633e0bca96f" />
+
+<img width="1432" height="692" alt="Screenshot 2026-05-14 at 9 56 10 PM" src="https://github.com/user-attachments/assets/025f6a78-7e4f-4245-8ece-70a1638f518b" />
+
+
+
 
 <br/>
 
