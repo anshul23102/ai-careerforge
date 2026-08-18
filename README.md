@@ -112,7 +112,7 @@ Open [http://localhost:3000](http://localhost:3000)
 │                     USER JOURNEY                            │
 ├─────────────────────────────────────────────────────────────┤
 │  Step 1 (~30s)  │  Profile: name, role, experience, goals   │
-│  Step 2 (~45s)  │  Resume: paste text or describe yourself  │
+│  Step 2 (~45s)  │  Resume: upload PDF/DOCX/DOC/RTF/TEX/TXT  │
 │  Step 3 (~30s)  │  Skills: rate DSA, design, coding 1 to 10 │
 │  Step 4 (~15s)  │  Portfolio: GitHub, LinkedIn, site URLs   │
 └────────────────────────────┬────────────────────────────────┘
