@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, type ChangeEvent, type DragEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import {
@@ -9,6 +9,7 @@ import {
   CheckCircle, Loader2, Clock
 } from 'lucide-react'
 import type { AssessmentData } from '../lib/types'
+import { MAX_FILE_SIZE_BYTES, SUPPORTED_EXTENSIONS } from '../lib/parsers/constants'
 
 const ROLES = [
   'Software Engineer',
@@ -101,6 +102,10 @@ export default function AssessmentForm() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [elapsedTime, setElapsedTime] = useState(0)
   const startTime = useRef(Date.now())
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
+  const [isParsingResume, setIsParsingResume] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -125,6 +130,61 @@ export default function AssessmentForm() {
       ...prev,
       skills: { ...prev.skills, [key]: value },
     }))
+  }
+
+  async function handleResumeFile(file: File) {
+    const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase()
+
+    if (!SUPPORTED_EXTENSIONS.includes(ext)) {
+      setErrors((prev) => ({
+        ...prev,
+        resumeText: `Unsupported file type "${ext}". Supported formats: PDF, DOCX, DOC, RTF, TEX, TXT, MD.`,
+      }))
+      return
+    }
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      setErrors((prev) => ({ ...prev, resumeText: 'This file is larger than 5MB. Please upload a smaller file.' }))
+      return
+    }
+
+    setIsParsingResume(true)
+    setErrors((prev) => ({ ...prev, resumeText: '' }))
+    try {
+      const body = new FormData()
+      body.set('file', file)
+      const res = await fetch('/api/parse-resume', { method: 'POST', body })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to parse file')
+      setResumeFile(file)
+      update('resumeText', data.text)
+    } catch (err) {
+      setResumeFile(null)
+      setErrors((prev) => ({
+        ...prev,
+        resumeText: err instanceof Error ? err.message : 'Failed to parse file',
+      }))
+    } finally {
+      setIsParsingResume(false)
+    }
+  }
+
+  function handleFileInputChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) handleResumeFile(file)
+    e.target.value = ''
+  }
+
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) handleResumeFile(file)
+  }
+
+  function removeResumeFile() {
+    setResumeFile(null)
+    update('resumeText', '')
   }
 
   function validateStep(): boolean {
@@ -353,7 +413,7 @@ export default function AssessmentForm() {
                 <div className="space-y-6">
                   <div>
                     <h2 className="text-2xl font-bold text-white mb-1">Your Resume</h2>
-                    <p className="text-white/40 text-sm">Paste your resume or describe your background</p>
+                    <p className="text-white/40 text-sm">Upload your resume in any common format</p>
                   </div>
 
                   <div
@@ -362,45 +422,92 @@ export default function AssessmentForm() {
                   >
                     <span className="text-cyan-400 mt-0.5">💡</span>
                     <p className="text-white/60">
-                      <strong className="text-white">Tip:</strong> Include your education, work experience, projects, skills, and achievements. The more detail you provide, the better your analysis will be.
+                      <strong className="text-white">Tip:</strong> PDF, Word (.doc/.docx), RTF, LaTeX (.tex), and plain text/Markdown are all supported. After upload, you can review and edit the extracted text before continuing.
                     </p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-white/70 mb-2">
-                      <FileText size={14} className="inline mr-1.5" />
-                      Resume / Experience
-                    </label>
-                    <textarea
-                      className="input-field resize-none"
-                      rows={12}
-                      placeholder="Paste your resume text here, or describe your:
-• Education (degree, university, graduation year)
-• Work experience (company, role, responsibilities, achievements)
-• Projects (what you built, tech stack, impact)
-• Skills (programming languages, frameworks, tools)
-• Certifications or notable achievements..."
-                      value={formData.resumeText}
-                      onChange={(e) => update('resumeText', e.target.value)}
-                      style={{ fontFamily: 'inherit', lineHeight: 1.6 }}
-                    />
-                    <div className="flex justify-between items-center mt-2">
-                      {errors.resumeText
-                        ? <p className="text-red-400 text-xs">{errors.resumeText}</p>
-                        : <span />
-                      }
-                      <span
-                        className="text-xs"
-                        style={{
-                          color: formData.resumeText.length < 100
-                            ? 'rgba(249,115,22,0.8)'
-                            : 'rgba(255,255,255,0.3)'
-                        }}
-                      >
-                        {formData.resumeText.length} chars {formData.resumeText.length < 100 && `(min 100)`}
-                      </span>
+                  {!resumeFile && (
+                    <div
+                      onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+                      onDragLeave={() => setIsDragging(false)}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="rounded-2xl border-2 border-dashed p-10 text-center cursor-pointer transition-all duration-300"
+                      style={{
+                        borderColor: isDragging ? 'rgba(165,180,252,0.6)' : 'rgba(255,255,255,0.15)',
+                        background: isDragging ? 'rgba(165,180,252,0.08)' : 'rgba(255,255,255,0.02)',
+                      }}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept={SUPPORTED_EXTENSIONS.join(',')}
+                        onChange={handleFileInputChange}
+                        className="hidden"
+                      />
+                      {isParsingResume ? (
+                        <>
+                          <Loader2 size={28} className="mx-auto mb-3 text-white/50 animate-spin" />
+                          <p className="text-white/60 text-sm">Reading your resume...</p>
+                        </>
+                      ) : (
+                        <>
+                          <FileText size={28} className="mx-auto mb-3 text-white/40" />
+                          <p className="text-white/70 text-sm font-medium">Drag & drop your resume, or click to browse</p>
+                          <p className="text-white/30 text-xs mt-2">PDF, DOC, DOCX, RTF, TEX, TXT, MD &middot; up to 5MB</p>
+                        </>
+                      )}
                     </div>
-                  </div>
+                  )}
+
+                  {errors.resumeText && <p className="text-red-400 text-xs">{errors.resumeText}</p>}
+
+                  {resumeFile && (
+                    <div className="space-y-3">
+                      <div
+                        className="flex items-center justify-between p-3 rounded-xl"
+                        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+                      >
+                        <div className="flex items-center gap-2 text-sm text-white/70">
+                          <FileText size={16} className="text-cyan-400" />
+                          {resumeFile.name}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={removeResumeFile}
+                          className="text-xs text-white/40 hover:text-white/70 transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">
+                          Extracted Text
+                          <span className="text-white/30 font-normal ml-2">(edit if anything looks off)</span>
+                        </label>
+                        <textarea
+                          className="input-field resize-none"
+                          rows={12}
+                          value={formData.resumeText}
+                          onChange={(e) => update('resumeText', e.target.value)}
+                          style={{ fontFamily: 'inherit', lineHeight: 1.6 }}
+                        />
+                        <div className="flex justify-end mt-2">
+                          <span
+                            className="text-xs"
+                            style={{
+                              color: formData.resumeText.length < 100
+                                ? 'rgba(249,115,22,0.8)'
+                                : 'rgba(255,255,255,0.3)'
+                            }}
+                          >
+                            {formData.resumeText.length} chars {formData.resumeText.length < 100 && `(min 100)`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
