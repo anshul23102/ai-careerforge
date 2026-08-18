@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: ai-careerforge-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: PORT
+        value: 3001
