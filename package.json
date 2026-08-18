@@ -10,7 +10,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.96.0",
     "framer-motion": "^12.38.0",
     "groq-sdk": "^1.2.0",
     "lucide-react": "^1.16.0",
