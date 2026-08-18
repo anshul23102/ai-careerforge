@@ -4,6 +4,18 @@ import type { AssessmentData, AnalysisResult } from '../../../lib/types'
 
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
+// Unauthenticated GitHub API calls share a 60 req/hr pool per IP across all
+// users of this app. A token raises that to 5,000 req/hr. Falls back to
+// unauthenticated calls if GITHUB_TOKEN isn't set — the app still works,
+// just with the lower shared limit.
+const githubHeaders: Record<string, string> = {
+  'Accept': 'application/vnd.github.v3+json',
+  'User-Agent': 'AI-CareerForge',
+}
+if (process.env.GITHUB_TOKEN) {
+  githubHeaders['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`
+}
+
 // ── Fetch real GitHub data via public API ──────────────────────────────────
 async function fetchGitHubData(url: string): Promise<string> {
   try {
@@ -12,11 +24,11 @@ async function fetchGitHubData(url: string): Promise<string> {
 
     const [userRes, reposRes] = await Promise.all([
       fetch(`https://api.github.com/users/${username}`, {
-        headers: { 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'AI-CareerForge' },
+        headers: githubHeaders,
         next: { revalidate: 300 },
       }),
       fetch(`https://api.github.com/users/${username}/repos?sort=stars&per_page=6&type=owner`, {
-        headers: { 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'AI-CareerForge' },
+        headers: githubHeaders,
         next: { revalidate: 300 },
       }),
     ])
