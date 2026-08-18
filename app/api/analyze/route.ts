@@ -145,6 +145,47 @@ Return ONLY valid JSON (no markdown, no code blocks, no extra text) with this ex
 }`
 }
 
+const SYSTEM_PROMPT = 'You are an expert career coach and technical recruiter with 15+ years of experience at top tech companies (Google, Amazon, Microsoft, Meta). Analyze candidate profiles and provide detailed, actionable interview readiness assessments. When real GitHub or portfolio data is provided, reference specific projects and details in your feedback. Always respond with valid JSON only - no markdown, no code fences, no extra text.'
+
+function stripCodeFence(text: string): string {
+  return text.startsWith('```')
+    ? text.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '').trim()
+    : text
+}
+
+// ── Call the model and parse its JSON, retrying once with the parse error if malformed ──
+async function getAnalysis(prompt: string): Promise<AnalysisResult> {
+  const messages: Groq.Chat.Completions.ChatCompletionMessageParam[] = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: prompt },
+  ]
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const completion = await client.chat.completions.create({
+      model: 'openai/gpt-oss-120b',
+      max_tokens: 2048,
+      temperature: 0.3,
+      messages,
+    })
+
+    const raw = completion.choices[0]?.message?.content?.trim() || ''
+    const analysisText = stripCodeFence(raw)
+
+    try {
+      return JSON.parse(analysisText) as AnalysisResult
+    } catch (parseError) {
+      if (attempt === 1) throw parseError
+      const message = parseError instanceof Error ? parseError.message : 'Unknown parse error'
+      messages.push(
+        { role: 'assistant', content: raw },
+        { role: 'user', content: `That response failed to parse as JSON: ${message}. Return ONLY the corrected, valid JSON object matching the required schema, no markdown, no extra text.` }
+      )
+    }
+  }
+
+  throw new Error('unreachable')
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const data: AssessmentData = await request.json()
@@ -159,28 +200,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       data.portfolioUrl?.trim() ? fetchPortfolioData(data.portfolioUrl) : Promise.resolve('Portfolio URL not provided.'),
     ])
 
-    const completion = await client.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      max_tokens: 2048,
-      temperature: 0.3,
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert career coach and technical recruiter with 15+ years of experience at top tech companies (Google, Amazon, Microsoft, Meta). Analyze candidate profiles and provide detailed, actionable interview readiness assessments. When real GitHub or portfolio data is provided, reference specific projects and details in your feedback. Always respond with valid JSON only - no markdown, no code fences, no extra text.',
-        },
-        {
-          role: 'user',
-          content: buildPrompt(data, { github: githubData, portfolio: portfolioData }),
-        },
-      ],
-    })
-
-    let analysisText = completion.choices[0]?.message?.content?.trim() || ''
-    if (analysisText.startsWith('```')) {
-      analysisText = analysisText.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '').trim()
-    }
-
-    const result: AnalysisResult = JSON.parse(analysisText)
+    const prompt = buildPrompt(data, { github: githubData, portfolio: portfolioData })
+    const result = await getAnalysis(prompt)
     return NextResponse.json(result)
 
   } catch (error: unknown) {
