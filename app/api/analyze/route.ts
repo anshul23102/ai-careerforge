@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
 import type { AssessmentData, AnalysisResult } from '../../../lib/types'
+import { stripHtmlToText } from '../../../lib/htmlText'
 
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
@@ -70,16 +71,11 @@ async function fetchPortfolioData(url: string): Promise<string> {
     })
     if (!res.ok) return `Portfolio site returned status ${res.status}.`
 
-    const html = await res.text()
-    // Strip HTML tags, collapse whitespace, trim to 1500 chars
-    const text = html
-      .replace(/<script[\s\S]*?<\/script>/gi, '')
-      .replace(/<style[\s\S]*?<\/style>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&[a-z]+;/gi, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 1500)
+    const text = stripHtmlToText(await res.text())
+
+    if (!text) {
+      return 'Portfolio site returned no readable text (it may require JavaScript rendering not supported here).'
+    }
 
     return `Portfolio website content (${url}):\n${text}`
   } catch {
