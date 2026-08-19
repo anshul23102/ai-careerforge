@@ -20,6 +20,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^1.0.7",
     "mammoth": "^1.12.1",
     "pdf-parse": "^2.4.5",
     "rtf-to-text": "^0.1.1",

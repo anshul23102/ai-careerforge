@@ -12,6 +12,7 @@
   "dependencies": {
     "@ai-careerforge/parsers": "*",
     "@ai-careerforge/shared": "*",
+    "@napi-rs/canvas": "^1.0.7",
     "framer-motion": "^12.38.0",
     "groq-sdk": "^1.2.0",
     "lucide-react": "^1.16.0",

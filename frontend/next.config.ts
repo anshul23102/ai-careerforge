@@ -5,7 +5,9 @@ const nextConfig: NextConfig = {
   // pdf-parse (via pdfjs-dist) sets up a worker module at runtime; Turbopack's
   // server bundling doesn't emit that file where pdfjs-dist expects it, so it
   // must run via native Node `require` instead of being bundled.
-  serverExternalPackages: ['pdf-parse'],
+  // @napi-rs/canvas ships native .node binaries per-platform — these must
+  // never be bundled by Turbopack (bundling breaks native addon loading).
+  serverExternalPackages: ['pdf-parse', '@napi-rs/canvas'],
   // npm workspaces hoist shared deps (including `next` itself) to the
   // monorepo root's node_modules, one level above this project — point
   // Turbopack there instead of guessing from unrelated lockfiles on disk.
@@ -30,6 +32,8 @@ const nextConfig: NextConfig = {
       '../node_modules/mammoth/**/*',
       '../node_modules/word-extractor/**/*',
       '../node_modules/rtf-to-text/**/*',
+      '../node_modules/@napi-rs/canvas/**/*',
+      '../node_modules/@napi-rs/canvas-*/**/*',
     ],
   },
 };
