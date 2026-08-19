@@ -4,12 +4,13 @@ import { useState, useEffect, useRef, type ChangeEvent, type DragEvent } from 'r
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import {
-  User, Mail, Briefcase, ChevronRight, ChevronLeft,
+  Briefcase, ChevronRight, ChevronLeft,
   FileText, Brain, GitBranch, Link2, Globe, MessageSquare,
   CheckCircle, Loader2, Clock
 } from 'lucide-react'
-import { toBase64Utf8, type AssessmentData } from '@ai-careerforge/shared'
 import { MAX_FILE_SIZE_BYTES, SUPPORTED_EXTENSIONS } from '@ai-careerforge/parsers/constants'
+import { useAuth } from '../contexts/AuthContext'
+import { parseResume, createAssessment, BackendError, type AssessmentSubmission } from '../lib/backend'
 
 const ROLES = [
   'Software Engineer',
@@ -60,9 +61,7 @@ function getSkillColor(v: number): string {
   return '#22c55e'
 }
 
-const defaultFormData: AssessmentData = {
-  name: '',
-  email: '',
+const defaultFormData: AssessmentSubmission = {
   targetRole: '',
   experienceLevel: 'fresher',
   targetCompanies: '',
@@ -95,9 +94,10 @@ const stepVariants = {
 
 export default function AssessmentForm() {
   const router = useRouter()
+  const { user, token, isLoading: isAuthLoading } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [direction, setDirection] = useState(1)
-  const [formData, setFormData] = useState<AssessmentData>(defaultFormData)
+  const [formData, setFormData] = useState<AssessmentSubmission>(defaultFormData)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [elapsedTime, setElapsedTime] = useState(0)
@@ -106,6 +106,10 @@ export default function AssessmentForm() {
   const [isParsingResume, setIsParsingResume] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!isAuthLoading && !token) router.push('/login')
+  }, [isAuthLoading, token, router])
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -120,12 +124,12 @@ export default function AssessmentForm() {
     return `${m}:${sec.toString().padStart(2, '0')}`
   }
 
-  function update<K extends keyof AssessmentData>(key: K, value: AssessmentData[K]) {
+  function update<K extends keyof AssessmentSubmission>(key: K, value: AssessmentSubmission[K]) {
     setFormData((prev) => ({ ...prev, [key]: value }))
     setErrors((prev) => ({ ...prev, [key]: '' }))
   }
 
-  function updateSkill(key: keyof AssessmentData['skills'], value: number) {
+  function updateSkill(key: keyof AssessmentSubmission['skills'], value: number) {
     setFormData((prev) => ({
       ...prev,
       skills: { ...prev.skills, [key]: value },
@@ -148,21 +152,19 @@ export default function AssessmentForm() {
       return
     }
 
+    if (!token) return
+
     setIsParsingResume(true)
     setErrors((prev) => ({ ...prev, resumeText: '' }))
     try {
-      const body = new FormData()
-      body.set('file', file)
-      const res = await fetch('/api/parse-resume', { method: 'POST', body })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to parse file')
+      const data = await parseResume(token, file)
       setResumeFile(file)
       update('resumeText', data.text)
     } catch (err) {
       setResumeFile(null)
       setErrors((prev) => ({
         ...prev,
-        resumeText: err instanceof Error ? err.message : 'Failed to parse file',
+        resumeText: err instanceof BackendError ? err.message : 'Failed to parse file',
       }))
     } finally {
       setIsParsingResume(false)
@@ -190,9 +192,6 @@ export default function AssessmentForm() {
   function validateStep(): boolean {
     const newErrors: Record<string, string> = {}
     if (currentStep === 1) {
-      if (!formData.name.trim()) newErrors.name = 'Name is required'
-      if (!formData.email.trim()) newErrors.email = 'Email is required'
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Invalid email'
       if (!formData.targetRole) newErrors.targetRole = 'Please select a role'
     }
     if (currentStep === 2) {
@@ -215,26 +214,30 @@ export default function AssessmentForm() {
   }
 
   async function handleSubmit() {
-    if (!validateStep()) return
+    if (!validateStep() || !token) return
     setIsSubmitting(true)
     try {
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
-      if (!res.ok) throw new Error('Analysis failed')
-      const result = await res.json()
-      const payload = { result, name: formData.name }
-      const encoded = toBase64Utf8(JSON.stringify(payload))
-      router.push(`/results?data=${encodeURIComponent(encoded)}`)
-    } catch {
-      setErrors({ submit: 'Something went wrong. Please try again.' })
+      const { id } = await createAssessment(token, formData)
+      router.push(`/results/${id}`)
+    } catch (err) {
+      setErrors({ submit: err instanceof BackendError ? err.message : 'Something went wrong. Please try again.' })
       setIsSubmitting(false)
     }
   }
 
   const progressPct = ((currentStep - 1) / 3) * 100
+
+  if (isAuthLoading || !token) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex gap-3 justify-center">
+          <div className="w-3 h-3 rounded-full bg-blue-400 dot-1" />
+          <div className="w-3 h-3 rounded-full bg-purple-400 dot-2" />
+          <div className="w-3 h-3 rounded-full bg-pink-400 dot-3" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-16 relative">
@@ -310,39 +313,10 @@ export default function AssessmentForm() {
               {currentStep === 1 && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-white mb-1">Your Profile</h2>
-                    <p className="text-white/40 text-sm">Tell us about yourself and your career goals</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-white/70 mb-2">
-                        <User size={14} className="inline mr-1.5" />
-                        Full Name
-                      </label>
-                      <input
-                        type="text"
-                        className="input-field"
-                        placeholder="Alex Johnson"
-                        value={formData.name}
-                        onChange={(e) => update('name', e.target.value)}
-                      />
-                      {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-white/70 mb-2">
-                        <Mail size={14} className="inline mr-1.5" />
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        className="input-field"
-                        placeholder="alex@example.com"
-                        value={formData.email}
-                        onChange={(e) => update('email', e.target.value)}
-                      />
-                      {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
-                    </div>
+                    <h2 className="text-2xl font-bold text-white mb-1">
+                      {user ? `Hey ${user.name.split(' ')[0]}, let's set your goal` : 'Your Profile'}
+                    </h2>
+                    <p className="text-white/40 text-sm">Tell us about your career goals</p>
                   </div>
 
                   <div>

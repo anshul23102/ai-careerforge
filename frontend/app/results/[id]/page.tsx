@@ -1,38 +1,34 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
-import { Suspense, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import ResultsDashboard from '../../components/ResultsDashboard'
-import InteractiveMesh from '../../components/InteractiveMesh'
-import { fromBase64Utf8, type AnalysisResult } from '@ai-careerforge/shared'
+import ResultsDashboard from '../../../components/ResultsDashboard'
+import InteractiveMesh from '../../../components/InteractiveMesh'
+import { useAuth } from '../../../contexts/AuthContext'
+import { getAssessment, type AssessmentDetail } from '../../../lib/backend'
 
-interface DecodedPayload {
-  result: AnalysisResult
-  name: string
-}
-
-function ResultsContent() {
-  const searchParams = useSearchParams()
-  const [payload, setPayload] = useState<DecodedPayload | null>(null)
+export default function ResultsPage() {
+  const params = useParams<{ id: string }>()
+  const router = useRouter()
+  const { token, user, isLoading: isAuthLoading } = useAuth()
+  const [assessment, setAssessment] = useState<AssessmentDetail | null>(null)
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const data = searchParams.get('data')
-    if (!data) { setError(true); setLoading(false); return }
-    try {
-      const decoded = JSON.parse(fromBase64Utf8(data)) as DecodedPayload
-      if (!decoded.result || !decoded.name) throw new Error('Invalid data')
-      setPayload(decoded)
-    } catch {
-      setError(true)
-    } finally {
-      setLoading(false)
+    if (isAuthLoading) return
+    if (!token) {
+      router.push('/login')
+      return
     }
-  }, [searchParams])
+    getAssessment(token, params.id)
+      .then(setAssessment)
+      .catch(() => setError(true))
+      .finally(() => setLoading(false))
+  }, [isAuthLoading, token, params.id, router])
 
-  if (loading) {
+  if (loading || isAuthLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#07080f]">
         <InteractiveMesh />
@@ -50,7 +46,7 @@ function ResultsContent() {
     )
   }
 
-  if (error || !payload) {
+  if (error || !assessment) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#07080f] px-6">
         <InteractiveMesh />
@@ -59,7 +55,7 @@ function ResultsContent() {
           <div className="text-5xl mb-4">😕</div>
           <h2 className="text-2xl font-bold text-white mb-3">No Results Found</h2>
           <p className="text-white/50 mb-8">
-            We couldn&apos;t find your assessment results. This might happen if the link expired or was incomplete.
+            We couldn&apos;t find this assessment. It may not exist, or it might belong to a different account.
           </p>
           <Link href="/assess" className="btn-primary inline-flex items-center gap-2">
             Take the Assessment <span>→</span>
@@ -69,23 +65,5 @@ function ResultsContent() {
     )
   }
 
-  return <ResultsDashboard result={payload.result} candidateName={payload.name} />
-}
-
-export default function ResultsPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#07080f]">
-          <div className="flex gap-3 justify-center">
-            <div className="w-3 h-3 rounded-full bg-blue-400 dot-1" />
-            <div className="w-3 h-3 rounded-full bg-purple-400 dot-2" />
-            <div className="w-3 h-3 rounded-full bg-pink-400 dot-3" />
-          </div>
-        </div>
-      }
-    >
-      <ResultsContent />
-    </Suspense>
-  )
+  return <ResultsDashboard result={assessment.result} candidateName={user?.name || 'there'} />
 }

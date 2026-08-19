@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Brain, Target, FileText, MessageSquare, Briefcase, ArrowRight, Zap, CheckCircle, Star, Users, Clock, BarChart3 } from "lucide-react";
 import InteractiveMesh from "../components/InteractiveMesh";
 import StarField from "../components/StarField";
+import NavAuthButtons from "../components/NavAuthButtons";
 
 
 const dimensions = [
@@ -66,14 +67,7 @@ export default function Home() {
           </div>
 
           {/* CTA */}
-          <Link
-            href="/assess"
-            className="btn-primary text-sm px-5 py-2 flex items-center gap-1.5"
-            style={{ padding: "0.45rem 1.2rem", fontSize: "0.85rem" }}
-          >
-            Start Free
-            <ArrowRight size={14} />
-          </Link>
+          <NavAuthButtons />
         </div>
       </nav>
 
@@ -124,7 +118,7 @@ export default function Home() {
               { icon: Users, value: "10K+", label: "Assessments done" },
               { icon: Clock, value: "< 2 min", label: "To your score" },
               { icon: BarChart3, value: "4 dimensions", label: "Analyzed" },
-              { icon: Star, value: "Free", label: "No signup needed" },
+              { icon: Star, value: "Free", label: "Always" },
             ].map((s) => (
               <div key={s.label} className="glass px-4 py-2.5 rounded-2xl flex items-center gap-2.5 border border-white/06">
                 <s.icon size={15} className="text-purple-400 flex-shrink-0" />
@@ -229,16 +223,16 @@ export default function Home() {
             {[
               {
                 number: "01",
-                title: "Tell us about yourself",
-                body: "Your name, target role, experience level, and which companies you're aiming for. Takes about 30 seconds.",
+                title: "Create your account, tell us your goal",
+                body: "Quick signup, then your target role, experience level, and which companies you're aiming for. Takes about 30 seconds.",
                 time: "~30 sec",
                 color: "#6eb4ff",
                 rgb: "110,180,255",
               },
               {
                 number: "02",
-                title: "Rate your skills & paste your resume",
-                body: "Self-assess across 5 technical areas on a 1–10 scale, then paste your resume text. Our AI does the deep analysis.",
+                title: "Rate your skills & upload your resume",
+                body: "Self-assess across 5 technical areas on a 1–10 scale, then upload your resume in any common format. Our AI does the deep analysis.",
                 time: "~60 sec",
                 color: "#a5b4fc",
                 rgb: "165,180,252",
@@ -320,7 +314,7 @@ export default function Home() {
           </Link>
 
           <div className="mt-10 flex flex-wrap justify-center gap-6 text-sm text-white/30">
-            {["No signup required", "100% free", "Results in under 2 min"].map((t) => (
+            {["Free account, 30 seconds", "100% free", "Results in under 2 min"].map((t) => (
               <span key={t} className="flex items-center gap-2">
                 <CheckCircle size={14} className="text-green-400" />
                 {t}
