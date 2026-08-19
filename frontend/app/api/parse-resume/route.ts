@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { parseResumeFile, MAX_FILE_SIZE_BYTES } from '../../../lib/parsers'
-import { ParseError } from '../../../lib/parsers/errors'
+import { parseResumeFile, MAX_FILE_SIZE_BYTES, ParseError } from '@ai-careerforge/parsers'
 
 export const runtime = 'nodejs'
 

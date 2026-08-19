@@ -5,7 +5,7 @@ import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import ResultsDashboard from '../../components/ResultsDashboard'
 import InteractiveMesh from '../../components/InteractiveMesh'
-import type { AnalysisResult } from '../../lib/types'
+import type { AnalysisResult } from '@ai-careerforge/shared'
 
 interface DecodedPayload {
   result: AnalysisResult

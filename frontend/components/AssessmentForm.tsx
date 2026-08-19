@@ -8,8 +8,8 @@ import {
   FileText, Brain, GitBranch, Link2, Globe, MessageSquare,
   CheckCircle, Loader2, Clock
 } from 'lucide-react'
-import type { AssessmentData } from '../lib/types'
-import { MAX_FILE_SIZE_BYTES, SUPPORTED_EXTENSIONS } from '../lib/parsers/constants'
+import type { AssessmentData } from '@ai-careerforge/shared'
+import { MAX_FILE_SIZE_BYTES, SUPPORTED_EXTENSIONS } from '@ai-careerforge/parsers/constants'
 
 const ROLES = [
   'Software Engineer',

@@ -2,11 +2,16 @@ services:
   - type: web
     name: ai-careerforge-backend
     runtime: docker
-    rootDir: backend
-    dockerfilePath: ./Dockerfile
+    # Build context is the monorepo root (not rootDir: backend) — the backend
+    # depends on packages/parsers and packages/shared via npm workspaces, and
+    # Docker can't COPY files from outside its build context.
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
     plan: free
     envVars:
       - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
         sync: false
       - key: PORT
         value: 3001

@@ -3,9 +3,9 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { NextRequest } from 'next/server'
 import { POST } from './route'
-import { MAX_FILE_SIZE_BYTES } from '../../../lib/parsers'
+import { MAX_FILE_SIZE_BYTES } from '@ai-careerforge/parsers'
 
-const fixtures = join(__dirname, '../../../lib/parsers/__fixtures__')
+const fixtures = join(__dirname, '../../../../packages/parsers/src/__fixtures__')
 
 function makeRequest(file: File): NextRequest {
   const formData = new FormData()

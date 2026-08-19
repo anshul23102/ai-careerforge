@@ -7,6 +7,7 @@ import { parsePlaintext } from './plaintext'
 import { ParseError } from './errors'
 
 export { MAX_FILE_SIZE_BYTES, SUPPORTED_EXTENSIONS } from './constants'
+export { ParseError } from './errors'
 
 export async function parseResumeFile(filename: string, buffer: Buffer): Promise<string> {
   const ext = filename.slice(filename.lastIndexOf('.')).toLowerCase()

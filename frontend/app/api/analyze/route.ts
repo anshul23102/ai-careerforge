@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
-import type { AssessmentData, AnalysisResult } from '../../../lib/types'
-import { stripHtmlToText } from '../../../lib/htmlText'
+import { stripHtmlToText, type AssessmentData, type AnalysisResult } from '@ai-careerforge/shared'
 
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
 

@@ -11,7 +11,7 @@ import {
   TrendingUp, Target, Zap, X, Link2, Download
 } from 'lucide-react'
 import Link from 'next/link'
-import type { AnalysisResult } from '../lib/types'
+import type { AnalysisResult } from '@ai-careerforge/shared'
 
 interface ResultsDashboardProps {
   result: AnalysisResult
