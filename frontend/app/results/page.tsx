@@ -5,7 +5,7 @@ import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import ResultsDashboard from '../../components/ResultsDashboard'
 import InteractiveMesh from '../../components/InteractiveMesh'
-import type { AnalysisResult } from '@ai-careerforge/shared'
+import { fromBase64Utf8, type AnalysisResult } from '@ai-careerforge/shared'
 
 interface DecodedPayload {
   result: AnalysisResult
@@ -22,7 +22,7 @@ function ResultsContent() {
     const data = searchParams.get('data')
     if (!data) { setError(true); setLoading(false); return }
     try {
-      const decoded = JSON.parse(atob(data)) as DecodedPayload
+      const decoded = JSON.parse(fromBase64Utf8(data)) as DecodedPayload
       if (!decoded.result || !decoded.name) throw new Error('Invalid data')
       setPayload(decoded)
     } catch {

@@ -8,7 +8,7 @@ import {
   FileText, Brain, GitBranch, Link2, Globe, MessageSquare,
   CheckCircle, Loader2, Clock
 } from 'lucide-react'
-import type { AssessmentData } from '@ai-careerforge/shared'
+import { toBase64Utf8, type AssessmentData } from '@ai-careerforge/shared'
 import { MAX_FILE_SIZE_BYTES, SUPPORTED_EXTENSIONS } from '@ai-careerforge/parsers/constants'
 
 const ROLES = [
@@ -226,8 +226,8 @@ export default function AssessmentForm() {
       if (!res.ok) throw new Error('Analysis failed')
       const result = await res.json()
       const payload = { result, name: formData.name }
-      const encoded = btoa(JSON.stringify(payload))
-      router.push(`/results?data=${encoded}`)
+      const encoded = toBase64Utf8(JSON.stringify(payload))
+      router.push(`/results?data=${encodeURIComponent(encoded)}`)
     } catch {
       setErrors({ submit: 'Something went wrong. Please try again.' })
       setIsSubmitting(false)
