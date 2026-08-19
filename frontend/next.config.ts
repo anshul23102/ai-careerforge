@@ -12,6 +12,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname, ".."),
   },
+  // Without this, Next's serverless output file tracing infers its own
+  // root independently of the turbopack.root setting above, and can pick
+  // an unrelated ancestor directory (e.g. a stray lockfile above the repo)
+  // — producing broken relative paths for traced dependencies like
+  // pdf-parse that live in the monorepo root's node_modules. This must
+  // match turbopack.root exactly.
+  outputFileTracingRoot: path.join(__dirname, ".."),
 };
 
 export default nextConfig;
