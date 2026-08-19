@@ -19,6 +19,19 @@ const nextConfig: NextConfig = {
   // pdf-parse that live in the monorepo root's node_modules. This must
   // match turbopack.root exactly.
   outputFileTracingRoot: path.join(__dirname, ".."),
+  // pdf-parse is only reachable through the @ai-careerforge/parsers workspace
+  // symlink, not as a direct dependency of this project — Next's automatic
+  // file tracing can fail to correctly package it (and its worker/font
+  // assets) for deployment in that case. Force-include it explicitly for
+  // the routes that use it.
+  outputFileTracingIncludes: {
+    '/api/parse-resume': [
+      '../node_modules/pdf-parse/**/*',
+      '../node_modules/mammoth/**/*',
+      '../node_modules/word-extractor/**/*',
+      '../node_modules/rtf-to-text/**/*',
+    ],
+  },
 };
 
 export default nextConfig;
