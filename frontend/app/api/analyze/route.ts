@@ -38,9 +38,12 @@ async function fetchGitHubData(url: string): Promise<string> {
     const user = await userRes.json()
     const repos = reposRes.ok ? await reposRes.json() : []
 
-    const repoSummary = Array.isArray(repos) && repos.length > 0
-      ? repos
-          .filter((r: { fork: boolean }) => !r.fork)
+    const ownRepos = Array.isArray(repos)
+      ? repos.filter((r: { fork: boolean }) => !r.fork)
+      : []
+
+    const repoSummary = ownRepos.length > 0
+      ? ownRepos
           .slice(0, 5)
           .map((r: { name: string; description: string; stargazers_count: number; language: string; forks_count: number }) =>
             `  - ${r.name}${r.description ? ': ' + r.description : ''} [${r.language || 'N/A'}, ${r.stargazers_count} stars, ${r.forks_count} forks]`
