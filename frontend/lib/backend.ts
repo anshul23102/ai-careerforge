@@ -42,6 +42,24 @@ export async function login(email: string, password: string): Promise<AuthRespon
   return parseJsonOrThrow(res) as Promise<AuthResponse>
 }
 
+export async function forgotPassword(email: string): Promise<{ message: string }> {
+  const res = await fetch(`${BACKEND_URL}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  return parseJsonOrThrow(res) as Promise<{ message: string }>
+}
+
+export async function resetPassword(token: string, password: string): Promise<{ message: string }> {
+  const res = await fetch(`${BACKEND_URL}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, password }),
+  })
+  return parseJsonOrThrow(res) as Promise<{ message: string }>
+}
+
 export async function fetchMe(token: string): Promise<{ user: AuthUser }> {
   const res = await fetch(`${BACKEND_URL}/auth/me`, {
     headers: { Authorization: `Bearer ${token}` },

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest'
 import request from 'supertest'
 import mongoose from 'mongoose'
 import { MongoMemoryServer } from 'mongodb-memory-server'
@@ -6,6 +6,9 @@ import { createApp } from '../app'
 import { UserModel } from '../models/User'
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
+
+const sendPasswordResetEmail = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+vi.mock('../services/email', () => ({ sendPasswordResetEmail }))
 
 let mongod: MongoMemoryServer
 const app = createApp()
@@ -22,6 +25,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await UserModel.deleteMany({})
+  sendPasswordResetEmail.mockClear()
 })
 
 describe('POST /auth/signup', () => {
@@ -117,5 +121,91 @@ describe('GET /auth/me', () => {
   it('returns 401 with an invalid token', async () => {
     const response = await request(app).get('/auth/me').set('Authorization', 'Bearer garbage')
     expect(response.status).toBe(401)
+  })
+})
+
+describe('POST /auth/forgot-password', () => {
+  it('sends a reset email for an existing account', async () => {
+    await request(app)
+      .post('/auth/signup')
+      .send({ name: 'Ada Lovelace', email: 'ada@example.com', password: 'supersecret' })
+
+    const response = await request(app).post('/auth/forgot-password').send({ email: 'ada@example.com' })
+
+    expect(response.status).toBe(200)
+    expect(sendPasswordResetEmail).toHaveBeenCalledTimes(1)
+    expect(sendPasswordResetEmail).toHaveBeenCalledWith('ada@example.com', expect.stringContaining('/reset-password/'))
+
+    const user = await UserModel.findOne({ email: 'ada@example.com' })
+    expect(user?.resetTokenHash).toEqual(expect.any(String))
+    expect(user?.resetTokenExpiresAt).toBeInstanceOf(Date)
+  })
+
+  it('returns the same generic response for a nonexistent account, without sending an email', async () => {
+    const response = await request(app).post('/auth/forgot-password').send({ email: 'nobody@example.com' })
+
+    expect(response.status).toBe(200)
+    expect(response.body.message).toEqual(expect.any(String))
+    expect(sendPasswordResetEmail).not.toHaveBeenCalled()
+  })
+
+  it('requires an email', async () => {
+    const response = await request(app).post('/auth/forgot-password').send({})
+    expect(response.status).toBe(400)
+  })
+})
+
+describe('POST /auth/reset-password', () => {
+  async function requestResetToken(email: string) {
+    await request(app).post('/auth/forgot-password').send({ email })
+    const resetUrl = sendPasswordResetEmail.mock.calls[sendPasswordResetEmail.mock.calls.length - 1][1] as string
+    return resetUrl.split('/reset-password/')[1]
+  }
+
+  it('resets the password with a valid token', async () => {
+    await request(app)
+      .post('/auth/signup')
+      .send({ name: 'Ada Lovelace', email: 'ada@example.com', password: 'supersecret' })
+
+    const token = await requestResetToken('ada@example.com')
+
+    const response = await request(app).post('/auth/reset-password').send({ token, password: 'newpassword123' })
+    expect(response.status).toBe(200)
+
+    const login = await request(app).post('/auth/login').send({ email: 'ada@example.com', password: 'newpassword123' })
+    expect(login.status).toBe(200)
+  })
+
+  it('invalidates the token after use', async () => {
+    await request(app)
+      .post('/auth/signup')
+      .send({ name: 'Ada Lovelace', email: 'ada@example.com', password: 'supersecret' })
+
+    const token = await requestResetToken('ada@example.com')
+    await request(app).post('/auth/reset-password').send({ token, password: 'newpassword123' })
+
+    const reuse = await request(app).post('/auth/reset-password').send({ token, password: 'anotherpassword' })
+    expect(reuse.status).toBe(400)
+  })
+
+  it('rejects an unknown token', async () => {
+    const response = await request(app).post('/auth/reset-password').send({ token: 'not-a-real-token', password: 'newpassword123' })
+    expect(response.status).toBe(400)
+  })
+
+  it('rejects a password under 8 characters', async () => {
+    await request(app)
+      .post('/auth/signup')
+      .send({ name: 'Ada Lovelace', email: 'ada@example.com', password: 'supersecret' })
+
+    const token = await requestResetToken('ada@example.com')
+
+    const response = await request(app).post('/auth/reset-password').send({ token, password: 'short' })
+    expect(response.status).toBe(400)
+  })
+
+  it('requires both token and password', async () => {
+    const response = await request(app).post('/auth/reset-password').send({})
+    expect(response.status).toBe(400)
   })
 })
