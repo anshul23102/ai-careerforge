@@ -8,7 +8,7 @@ export function buildPrompt(
   enriched: { github: string; portfolio: string }
 ): string {
   const skillAvg = Object.values(data.skills).reduce((a, b) => a + b, 0) / 5
-  const hasLinkedin = !!data.linkedinUrl.trim()
+  const hasLinkedin = !!data.linkedinUrl?.trim()
 
   return `Analyze this candidate profile and provide an interview readiness assessment:
 
