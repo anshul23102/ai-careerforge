@@ -6,7 +6,7 @@
 
 [![Live Demo](https://img.shields.io/badge/🟢_Live_Demo-ai--careerforge.vercel.app-6eb4ff?style=for-the-badge)](https://ai-careerforge.vercel.app)
 [![Next.js](https://img.shields.io/badge/Next.js-16.2-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
-[![Groq AI](https://img.shields.io/badge/Groq-Llama_3.3_70B-f97316?style=for-the-badge)](https://groq.com)
+[![Groq AI](https://img.shields.io/badge/Groq-GPT--OSS_120B-f97316?style=for-the-badge)](https://groq.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
 [![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com)
 
@@ -20,7 +20,7 @@
 
 Built for engineers at every stage: freshers, interns, and experienced developers who want to know exactly where they stand before walking into their next interview.
 
-> No signup. No credit card. Results in under 2 minutes. Completely free.
+> Free account (30 seconds), results in under 2 minutes. Completely free, no credit card.
 
 <br/>
 
@@ -43,7 +43,7 @@ Built for engineers at every stage: freshers, interns, and experienced developer
 | | Feature | Description |
 |---|---|---|
 | 🧠 | **4-Dimension AI Analysis** | Technical Skills, Resume Quality, Communication, Portfolio Strength |
-| 🤖 | **Real Groq AI** | Llama 3.3 70B analyzes your full profile with deep context |
+| 🤖 | **Real Groq AI** | GPT-OSS 120B analyzes your full profile with deep context |
 | 🐙 | **Live GitHub Fetch** | Pulls your real repos, languages, stars and bio via GitHub API |
 | 🌐 | **Portfolio Scraping** | Reads your actual portfolio site and factors it into scoring |
 | 📊 | **Visual Dashboard** | Animated score gauge, radar chart, dimension bars with insights |
@@ -64,7 +64,7 @@ Built for engineers at every stage: freshers, interns, and experienced developer
 | ✨ Animations | Framer Motion v12 |
 | 📈 Charts | Recharts v3 |
 | 🎯 Icons | Lucide React |
-| 🤖 AI Model | Groq — Llama 3.3 70B |
+| 🤖 AI Model | Groq — GPT-OSS 120B |
 | 🖼️ Canvas FX | Custom Spring Physics Mesh |
 | 🚀 Deployment | Vercel |
 
@@ -122,7 +122,7 @@ Open [http://localhost:3000](http://localhost:3000)
         │  POST /api/analyze                 │
         │  ├── Fetch GitHub API (live data)  │
         │  ├── Scrape portfolio site         │
-        │  └── Call Groq Llama 3.3 70B       │
+        │  └── Call Groq GPT-OSS 120B         │
         └────────────────────────────────────┘
                              │
                              ▼

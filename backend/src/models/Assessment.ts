@@ -18,6 +18,7 @@ const assessmentSchema = new Schema({
   communicationRating: { type: Number, required: true },
   hasProjects: { type: Boolean, required: true },
   result: { type: Schema.Types.Mixed, required: true },
+  isPublic: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 })
 

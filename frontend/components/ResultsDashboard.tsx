@@ -16,6 +16,11 @@ import type { AnalysisResult } from '@ai-careerforge/shared'
 interface ResultsDashboardProps {
   result: AnalysisResult
   candidateName: string
+  // When provided (the owner's private /results/[id] view), sharing marks
+  // the assessment public on the backend first and resolves to the public
+  // /share/[id] URL. When omitted (the public /share/[id] page itself),
+  // sharing just uses the current page's own URL, which is already public.
+  resolveShareUrl?: () => Promise<string>
 }
 
 function getLevelColor(level: AnalysisResult['level']): string {
@@ -101,7 +106,7 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] } },
 }
 
-export default function ResultsDashboard({ result, candidateName }: ResultsDashboardProps) {
+export default function ResultsDashboard({ result, candidateName, resolveShareUrl }: ResultsDashboardProps) {
   const [displayScore, setDisplayScore] = useState(0)
   const [strokeOffset, setStrokeOffset] = useState(440)
   const [showShareModal, setShowShareModal] = useState(false)
@@ -159,23 +164,47 @@ export default function ResultsDashboard({ result, candidateName }: ResultsDashb
   const levelColor = getLevelColor(result.level)
   const firstName = candidateName.split(' ')[0]
 
-  function handleCopyLink() {
-    navigator.clipboard.writeText(window.location.href).then(() => {
+  const [isPreparingShare, setIsPreparingShare] = useState(false)
+
+  async function getShareUrl(): Promise<string> {
+    if (resolveShareUrl) return resolveShareUrl()
+    return window.location.href
+  }
+
+  async function handleCopyLink() {
+    setIsPreparingShare(true)
+    try {
+      const url = await getShareUrl()
+      await navigator.clipboard.writeText(url)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    })
+    } finally {
+      setIsPreparingShare(false)
+    }
   }
 
-  function handleLinkedIn() {
-    const text = `Just assessed my Interview Readiness on AI CareerForge!\n\n My Score: ${result.overall_score}/100 - ${result.level} level\n Technical: ${result.dimensions.technical} | Resume: ${result.dimensions.resume} | Communication: ${result.dimensions.communication} | Portfolio: ${result.dimensions.portfolio}\n\nCheck yours: ${window.location.origin}`
-    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(text)}`
-    window.open(url, '_blank')
+  async function handleLinkedIn() {
+    setIsPreparingShare(true)
+    try {
+      const shareUrl = await getShareUrl()
+      const text = `Just assessed my Interview Readiness on AI CareerForge!\n\n My Score: ${result.overall_score}/100 - ${result.level} level\n Technical: ${result.dimensions.technical} | Resume: ${result.dimensions.resume} | Communication: ${result.dimensions.communication} | Portfolio: ${result.dimensions.portfolio}\n\nCheck yours: ${window.location.origin}`
+      const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}&summary=${encodeURIComponent(text)}`
+      window.open(url, '_blank')
+    } finally {
+      setIsPreparingShare(false)
+    }
   }
 
-  function handleTwitter() {
-    const text = `Just got my Interview Readiness Score on AI CareerForge!\n\nScore: ${result.overall_score}/100 (${result.level})\nTechnical: ${result.dimensions.technical} | Resume: ${result.dimensions.resume}\n\nCheck yours for free:`
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.origin)}`
-    window.open(url, '_blank')
+  async function handleTwitter() {
+    setIsPreparingShare(true)
+    try {
+      const shareUrl = await getShareUrl()
+      const text = `Just got my Interview Readiness Score on AI CareerForge!\n\nScore: ${result.overall_score}/100 (${result.level})\nTechnical: ${result.dimensions.technical} | Resume: ${result.dimensions.resume}\n\nCheck yours for free:`
+      const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`
+      window.open(url, '_blank')
+    } finally {
+      setIsPreparingShare(false)
+    }
   }
 
   function handleDownloadCard() {
@@ -668,6 +697,7 @@ export default function ResultsDashboard({ result, candidateName }: ResultsDashb
                 {/* LinkedIn */}
                 <button
                   onClick={handleLinkedIn}
+                  disabled={isPreparingShare}
                   className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 hover:scale-[1.02] group"
                   style={{ background: 'rgba(10,102,194,0.12)', border: '1px solid rgba(10,102,194,0.25)' }}
                 >
@@ -685,6 +715,7 @@ export default function ResultsDashboard({ result, candidateName }: ResultsDashb
                 {/* Twitter / X */}
                 <button
                   onClick={handleTwitter}
+                  disabled={isPreparingShare}
                   className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 hover:scale-[1.02] group"
                   style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
                 >
@@ -702,6 +733,7 @@ export default function ResultsDashboard({ result, candidateName }: ResultsDashb
                 {/* Copy Link */}
                 <button
                   onClick={handleCopyLink}
+                  disabled={isPreparingShare}
                   className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 hover:scale-[1.02] group"
                   style={{
                     background: copied ? 'rgba(34,197,94,0.1)' : 'rgba(165,180,252,0.1)',

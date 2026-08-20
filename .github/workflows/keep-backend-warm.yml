@@ -1,0 +1,20 @@
+name: Keep backend warm
+
+# Render's free tier spins down the backend after ~15 minutes of no
+# inbound traffic, making the first real request after that wait 50+
+# seconds. A periodic health-check ping counts as traffic and keeps it
+# warm — free (GitHub Actions on a public repo), no new account or
+# payment needed.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend health endpoint
+        run: |
+          curl -sf https://ai-careerforge-backend-mfcs.onrender.com/health || echo "Ping failed (backend may be cold-starting or down)"

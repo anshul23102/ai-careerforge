@@ -93,6 +93,7 @@ export async function listAssessments(token: string): Promise<{ assessments: Ass
 export interface AssessmentDetail extends AssessmentSubmission {
   id: string
   result: AnalysisResult
+  isPublic: boolean
   createdAt: string
 }
 
@@ -101,4 +102,22 @@ export async function getAssessment(token: string, id: string): Promise<Assessme
     headers: { Authorization: `Bearer ${token}` },
   })
   return parseJsonOrThrow(res) as Promise<AssessmentDetail>
+}
+
+export async function shareAssessment(token: string, id: string): Promise<{ id: string; isPublic: boolean }> {
+  const res = await fetch(`${BACKEND_URL}/assessments/${id}/share`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  return parseJsonOrThrow(res) as Promise<{ id: string; isPublic: boolean }>
+}
+
+export interface PublicAssessment {
+  result: AnalysisResult
+  createdAt: string
+}
+
+export async function getPublicAssessment(id: string): Promise<PublicAssessment> {
+  const res = await fetch(`${BACKEND_URL}/assessments/${id}/public`)
+  return parseJsonOrThrow(res) as Promise<PublicAssessment>
 }

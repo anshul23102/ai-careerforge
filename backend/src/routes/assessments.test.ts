@@ -148,4 +148,74 @@ describe('GET /assessments/:id', () => {
     const response = await request(app).get('/assessments/not-a-valid-id').set('Authorization', `Bearer ${token}`)
     expect(response.status).toBe(404)
   })
+
+  it('is not public by default', async () => {
+    const created = await request(app).post('/assessments').set('Authorization', `Bearer ${token}`).send(validPayload)
+    const response = await request(app).get(`/assessments/${created.body.id}`).set('Authorization', `Bearer ${token}`)
+    expect(response.body.isPublic).toBe(false)
+  })
+})
+
+describe('PATCH /assessments/:id/share', () => {
+  it('requires authentication', async () => {
+    const response = await request(app).patch('/assessments/000000000000000000000000/share')
+    expect(response.status).toBe(401)
+  })
+
+  it('marks the assessment public for its owner', async () => {
+    const created = await request(app).post('/assessments').set('Authorization', `Bearer ${token}`).send(validPayload)
+
+    const shareResponse = await request(app).patch(`/assessments/${created.body.id}/share`).set('Authorization', `Bearer ${token}`)
+    expect(shareResponse.status).toBe(200)
+    expect(shareResponse.body.isPublic).toBe(true)
+
+    const detail = await request(app).get(`/assessments/${created.body.id}`).set('Authorization', `Bearer ${token}`)
+    expect(detail.body.isPublic).toBe(true)
+  })
+
+  it('returns 404 when a non-owner tries to share another user\'s assessment', async () => {
+    const created = await request(app).post('/assessments').set('Authorization', `Bearer ${token}`).send(validPayload)
+
+    const otherUser = await UserModel.create({ name: 'Bob', email: 'bob-share@example.com', passwordHash: 'hash' })
+    const otherToken = signToken(String(otherUser._id))
+
+    const response = await request(app).patch(`/assessments/${created.body.id}/share`).set('Authorization', `Bearer ${otherToken}`)
+    expect(response.status).toBe(404)
+  })
+})
+
+describe('GET /assessments/:id/public', () => {
+  it('requires no authentication', async () => {
+    const created = await request(app).post('/assessments').set('Authorization', `Bearer ${token}`).send(validPayload)
+    await request(app).patch(`/assessments/${created.body.id}/share`).set('Authorization', `Bearer ${token}`)
+
+    const response = await request(app).get(`/assessments/${created.body.id}/public`)
+
+    expect(response.status).toBe(200)
+    expect(response.body.result.overall_score).toBe(60)
+  })
+
+  it('does not include resumeText, skills, or contact URLs', async () => {
+    const created = await request(app).post('/assessments').set('Authorization', `Bearer ${token}`).send(validPayload)
+    await request(app).patch(`/assessments/${created.body.id}/share`).set('Authorization', `Bearer ${token}`)
+
+    const response = await request(app).get(`/assessments/${created.body.id}/public`)
+
+    expect(response.body.resumeText).toBeUndefined()
+    expect(response.body.skills).toBeUndefined()
+    expect(response.body.githubUrl).toBeUndefined()
+  })
+
+  it('returns 404 for an assessment that was never made public', async () => {
+    const created = await request(app).post('/assessments').set('Authorization', `Bearer ${token}`).send(validPayload)
+
+    const response = await request(app).get(`/assessments/${created.body.id}/public`)
+
+    expect(response.status).toBe(404)
+  })
+
+  it('returns 404 for a nonexistent id', async () => {
+    const response = await request(app).get('/assessments/000000000000000000000000/public')
+    expect(response.status).toBe(404)
+  })
 })

@@ -2,12 +2,13 @@ import { Router, type Request, type Response } from 'express'
 import multer from 'multer'
 import { parseResumeFile, MAX_FILE_SIZE_BYTES, ParseError } from '@ai-careerforge/parsers'
 import { requireAuth } from '../auth/requireAuth'
+import { resumeParseLimiter } from '../rateLimiters'
 
 export const resumeRouter = Router()
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_FILE_SIZE_BYTES } })
 
-resumeRouter.post('/resume/parse', requireAuth, upload.single('file'), async (req: Request, res: Response) => {
+resumeRouter.post('/resume/parse', requireAuth, resumeParseLimiter, upload.single('file'), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       res.status(400).json({ error: 'No file was provided.' })

@@ -7,12 +7,13 @@ import { AssessmentModel } from '../models/Assessment'
 import { fetchGitHubData } from '../services/github'
 import { fetchPortfolioData } from '../services/portfolio'
 import { buildPrompt, getAnalysis } from '../services/groq'
+import { assessmentLimiter } from '../rateLimiters'
 
 export const assessmentsRouter = Router()
 
 const REQUIRED_FIELDS: (keyof AssessmentData)[] = ['targetRole', 'experienceLevel', 'resumeText', 'skills']
 
-assessmentsRouter.post('/assessments', requireAuth, async (req: Request, res: Response) => {
+assessmentsRouter.post('/assessments', requireAuth, assessmentLimiter, async (req: Request, res: Response) => {
   try {
     const data = req.body as AssessmentData
 
@@ -104,6 +105,53 @@ assessmentsRouter.get('/assessments/:id', requireAuth, async (req: Request, res:
     communicationRating: assessment.communicationRating,
     hasProjects: assessment.hasProjects,
     result: assessment.result,
+    isPublic: assessment.isPublic,
     createdAt: assessment.createdAt,
   })
+})
+
+// Marks an assessment shareable. Idempotent, owner-only — this is the only
+// way isPublic ever becomes true, so a link can only start circulating if
+// the owner explicitly asked to share it.
+assessmentsRouter.patch('/assessments/:id/share', requireAuth, async (req: Request, res: Response) => {
+  let assessment
+  try {
+    assessment = await AssessmentModel.findOneAndUpdate(
+      { _id: req.params.id, userId: res.locals.userId },
+      { isPublic: true },
+      { returnDocument: 'after' }
+    ).lean()
+  } catch {
+    res.status(404).json({ error: 'Assessment not found.' })
+    return
+  }
+
+  if (!assessment) {
+    res.status(404).json({ error: 'Assessment not found.' })
+    return
+  }
+
+  res.status(200).json({ id: String(assessment._id), isPublic: true })
+})
+
+// Deliberately no requireAuth — this is the whole point. Returns only the
+// AI's analysis, never the resume text, skills, contact URLs, or which
+// account it belongs to, regardless of who's asking.
+assessmentsRouter.get('/assessments/:id/public', async (req: Request, res: Response) => {
+  let assessment
+  try {
+    assessment = await AssessmentModel.findOne({ _id: req.params.id, isPublic: true })
+      .select('result createdAt')
+      .lean()
+  } catch {
+    res.status(404).json({ error: 'This shared result is unavailable.' })
+    return
+  }
+
+  if (!assessment) {
+    res.status(404).json({ error: 'This shared result is unavailable.' })
+    return
+  }
+
+  res.status(200).json({ result: assessment.result, createdAt: assessment.createdAt })
 })

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { UserModel } from '../models/User'
 import { signToken } from '../auth/jwt'
 import { requireAuth } from '../auth/requireAuth'
+import { authLimiter } from '../rateLimiters'
 
 export const authRouter = Router()
 
@@ -13,7 +14,7 @@ function toPublicUser(user: { _id: unknown; name: string; email: string }) {
   return { id: String(user._id), name: user.name, email: user.email }
 }
 
-authRouter.post('/auth/signup', async (req: Request, res: Response) => {
+authRouter.post('/auth/signup', authLimiter, async (req: Request, res: Response) => {
   const { name, email, password } = req.body ?? {}
 
   if (!name || !email || !password) {
@@ -40,7 +41,7 @@ authRouter.post('/auth/signup', async (req: Request, res: Response) => {
   res.status(201).json({ token, user: toPublicUser(user) })
 })
 
-authRouter.post('/auth/login', async (req: Request, res: Response) => {
+authRouter.post('/auth/login', authLimiter, async (req: Request, res: Response) => {
   const { email, password } = req.body ?? {}
 
   if (!email || !password) {
