@@ -1,0 +1,19 @@
+# The Dockerfile COPYs whole directories (backend, packages/*) into the
+# build stage — without this file, `COPY backend backend` would also copy
+# backend/.env (real MONGODB_URI/JWT_SECRET/GROQ_API_KEY/RESEND_API_KEY)
+# into an image layer. Multi-stage build discards that layer from the final
+# image, but it would still exist in the build stage and any pushed/cached
+# layer, so real secrets must never enter the build context at all.
+.env
+.env.*
+!.env.example
+
+node_modules
+**/node_modules
+dist
+**/dist
+.next
+coverage
+.git
+.claude
+*.log

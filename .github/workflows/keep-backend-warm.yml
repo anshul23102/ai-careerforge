@@ -11,6 +11,11 @@ on:
     - cron: '*/10 * * * *'
   workflow_dispatch: {}
 
+# This workflow only pings a public health endpoint — it never needs to
+# read or write anything in the repo, so its GITHUB_TOKEN gets no access
+# rather than inheriting the org/repo default (which can be broader).
+permissions: {}
+
 jobs:
   ping:
     runs-on: ubuntu-latest

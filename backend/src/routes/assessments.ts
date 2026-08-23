@@ -54,9 +54,10 @@ assessmentsRouter.post('/assessments', requireAuth, assessmentLimiter, async (re
 
     res.status(201).json({ id: String(assessment._id), result })
   } catch (error: unknown) {
+    // Logged server-side only — an upstream error (Groq, GitHub, etc) could
+    // contain internal details that shouldn't reach an API client.
     console.error('Assessment error:', error)
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    res.status(500).json({ error: `Assessment failed: ${message}` })
+    res.status(500).json({ error: 'Assessment failed. Please try again.' })
   }
 })
 

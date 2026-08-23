@@ -22,9 +22,11 @@ resumeRouter.post('/resume/parse', requireAuth, resumeParseLimiter, upload.singl
       res.status(400).json({ error: error.message })
       return
     }
+    // Logged server-side only — the underlying library error can contain
+    // internal file paths or implementation details that shouldn't reach
+    // an API client.
     console.error('Resume parse error:', error)
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    res.status(500).json({ error: `Failed to parse resume: ${message}` })
+    res.status(500).json({ error: 'Failed to parse resume. Please try a different file.' })
   }
 })
 
