@@ -17,3 +17,15 @@ describe('CORS', () => {
     expect(response.headers['access-control-allow-origin']).toBe('https://ai-careerforge.vercel.app')
   })
 })
+
+describe('security headers', () => {
+  it('sets baseline hardening headers on every response', async () => {
+    const app = createApp()
+    const response = await request(app).get('/health')
+
+    expect(response.headers['x-content-type-options']).toBe('nosniff')
+    expect(response.headers['x-frame-options']).toBe('SAMEORIGIN')
+    expect(response.headers['strict-transport-security']).toEqual(expect.any(String))
+    expect(response.headers['x-powered-by']).toBeUndefined()
+  })
+})

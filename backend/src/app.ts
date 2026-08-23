@@ -1,5 +1,6 @@
 import express, { type Express, type Request, type Response, type NextFunction } from 'express'
 import cors from 'cors'
+import helmet from 'helmet'
 import morgan from 'morgan'
 import { healthRouter } from './routes/health'
 import { authRouter } from './routes/auth'
@@ -9,13 +10,28 @@ import { corsOptions } from './corsOptions'
 
 export function createApp(): Express {
   const app = express()
+  // This is a JSON API with no HTML views of its own, so it doesn't need
+  // helmet's browser-rendering defaults (CSP, COEP, etc, which are meant for
+  // pages the server itself renders) — just the headers relevant to an API:
+  // no caching of authenticated responses, no MIME sniffing, HSTS, and
+  // never being framed.
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    })
+  )
   app.use(cors(corsOptions))
   if (process.env.VITEST !== 'true') {
     // Skip the keep-alive workflow's /health pings so real traffic doesn't
     // get drowned out in Render's log stream.
     app.use(morgan('combined', { skip: (req) => req.path === '/health' }))
   }
-  app.use(express.json())
+  // Explicit rather than relying on express.json()'s 100kb default — bounds
+  // request bodies against abuse while comfortably covering a real (if
+  // verbose) resume's extracted text.
+  app.use(express.json({ limit: '1mb' }))
   app.use(healthRouter)
   app.use(authRouter)
   app.use(resumeRouter)
