@@ -1,4 +1,5 @@
 import type { Browser } from 'puppeteer-core'
+import { assertSafeUrl } from './urlSafety'
 
 const RENDER_TIMEOUT_MS = 10_000
 
@@ -19,8 +20,31 @@ export async function renderPageHtml(url: string): Promise<string | null> {
   let browser: Browser | undefined
   try {
     const puppeteer = (await import('puppeteer-core')).default
-    browser = await puppeteer.launch({ executablePath: CHROME_PATH, headless: true })
+    browser = await puppeteer.launch({
+      executablePath: CHROME_PATH,
+      headless: true,
+      // --no-sandbox is required because this runs as root in an
+      // unprivileged Docker container (Render doesn't grant the extra
+      // capabilities Chrome's own sandbox needs) — it trades away Chrome's
+      // internal process sandbox, which the per-navigation URL allowlist
+      // below and the container boundary itself are left to compensate for.
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    })
     const page = await browser.newPage()
+
+    // Validate every navigation this page makes (initial load, redirects,
+    // and subresources) against the same private-network blocklist used for
+    // the plain fetch — a URL that resolves publicly at the top of this
+    // function can still redirect to an internal address once Chrome is
+    // driving it.
+    await page.setRequestInterception(true)
+    page.on('request', (request) => {
+      assertSafeUrl(request.url())
+        .then(() => request.continue())
+        .catch(() => request.abort('blockedbyclient'))
+    })
+
+    await assertSafeUrl(url)
     await page.goto(url, { waitUntil: 'networkidle2', timeout: RENDER_TIMEOUT_MS })
     return await page.content()
   } catch {

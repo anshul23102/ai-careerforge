@@ -1,5 +1,6 @@
 import { stripHtmlToText } from '@ai-careerforge/shared'
 import { renderPageHtml } from './portfolioRenderer'
+import { fetchSafely, assertSafeUrl, UnsafeUrlError } from './urlSafety'
 
 // A plain fetch returns just the empty app shell for client-rendered SPAs
 // (React/Vue/etc with no server-rendered content) — this little text is the
@@ -11,7 +12,14 @@ export async function fetchPortfolioData(
   render: (url: string) => Promise<string | null> = renderPageHtml
 ): Promise<string> {
   try {
-    const res = await fetch(url, {
+    await assertSafeUrl(url)
+  } catch (error) {
+    if (error instanceof UnsafeUrlError) return 'Portfolio URL could not be fetched.'
+    throw error
+  }
+
+  try {
+    const res = await fetchSafely(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AI-CareerForge-bot/1.0)' },
       signal: AbortSignal.timeout(5000),
     })
