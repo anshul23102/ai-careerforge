@@ -29,7 +29,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await UserModel.deleteMany({})
   const user = await UserModel.create({ name: 'Ada Lovelace', email: 'ada@example.com', passwordHash: 'hash' })
-  token = signToken(String(user._id))
+  token = signToken(String(user._id), user.tokenVersion)
 })
 
 describe('POST /resume/parse', () => {

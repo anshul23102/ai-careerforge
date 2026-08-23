@@ -52,7 +52,7 @@ beforeEach(async () => {
   if (AssessmentModel) await AssessmentModel.deleteMany({})
   const user = await UserModel.create({ name: 'Ada Lovelace', email: 'ada@example.com', passwordHash: 'hash' })
   userId = String(user._id)
-  token = signToken(userId)
+  token = signToken(userId, user.tokenVersion)
 })
 
 const validPayload = {
@@ -113,7 +113,7 @@ describe('GET /assessments', () => {
     await request(app).post('/assessments').set('Authorization', `Bearer ${token}`).send(validPayload)
 
     const otherUser = await UserModel.create({ name: 'Bob', email: 'bob@example.com', passwordHash: 'hash' })
-    const otherToken = signToken(String(otherUser._id))
+    const otherToken = signToken(String(otherUser._id), otherUser.tokenVersion)
 
     const response = await request(app).get('/assessments').set('Authorization', `Bearer ${otherToken}`)
 
@@ -137,7 +137,7 @@ describe('GET /assessments/:id', () => {
     const created = await request(app).post('/assessments').set('Authorization', `Bearer ${token}`).send(validPayload)
 
     const otherUser = await UserModel.create({ name: 'Bob', email: 'bob@example.com', passwordHash: 'hash' })
-    const otherToken = signToken(String(otherUser._id))
+    const otherToken = signToken(String(otherUser._id), otherUser.tokenVersion)
 
     const response = await request(app).get(`/assessments/${created.body.id}`).set('Authorization', `Bearer ${otherToken}`)
 
@@ -177,7 +177,7 @@ describe('PATCH /assessments/:id/share', () => {
     const created = await request(app).post('/assessments').set('Authorization', `Bearer ${token}`).send(validPayload)
 
     const otherUser = await UserModel.create({ name: 'Bob', email: 'bob-share@example.com', passwordHash: 'hash' })
-    const otherToken = signToken(String(otherUser._id))
+    const otherToken = signToken(String(otherUser._id), otherUser.tokenVersion)
 
     const response = await request(app).patch(`/assessments/${created.body.id}/share`).set('Authorization', `Bearer ${otherToken}`)
     expect(response.status).toBe(404)

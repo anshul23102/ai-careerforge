@@ -10,6 +10,9 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
 const sendPasswordResetEmail = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 vi.mock('../services/email', () => ({ sendPasswordResetEmail }))
 
+const isPasswordBreached = vi.hoisted(() => vi.fn().mockResolvedValue(false))
+vi.mock('../services/breachedPassword', () => ({ isPasswordBreached }))
+
 let mongod: MongoMemoryServer
 const app = createApp()
 
@@ -26,6 +29,8 @@ afterAll(async () => {
 beforeEach(async () => {
   await UserModel.deleteMany({})
   sendPasswordResetEmail.mockClear()
+  isPasswordBreached.mockClear()
+  isPasswordBreached.mockResolvedValue(false)
 })
 
 describe('POST /auth/signup', () => {
@@ -65,6 +70,17 @@ describe('POST /auth/signup', () => {
       .send({ name: 'Ada Two', email: 'ada@example.com', password: 'anotherpass' })
 
     expect(response.status).toBe(409)
+  })
+
+  it('rejects a password found in a known breach', async () => {
+    isPasswordBreached.mockResolvedValueOnce(true)
+
+    const response = await request(app)
+      .post('/auth/signup')
+      .send({ name: 'Ada', email: 'ada@example.com', password: 'commonpassword' })
+
+    expect(response.status).toBe(400)
+    expect(await UserModel.findOne({ email: 'ada@example.com' })).toBeNull()
   })
 })
 
@@ -186,6 +202,34 @@ describe('POST /auth/reset-password', () => {
 
     const reuse = await request(app).post('/auth/reset-password').send({ token, password: 'anotherpassword' })
     expect(reuse.status).toBe(400)
+  })
+
+  it('invalidates any JWT issued before the reset', async () => {
+    const signup = await request(app)
+      .post('/auth/signup')
+      .send({ name: 'Ada Lovelace', email: 'ada@example.com', password: 'supersecret' })
+    const oldToken = signup.body.token as string
+
+    const meBefore = await request(app).get('/auth/me').set('Authorization', `Bearer ${oldToken}`)
+    expect(meBefore.status).toBe(200)
+
+    const resetToken = await requestResetToken('ada@example.com')
+    await request(app).post('/auth/reset-password').send({ token: resetToken, password: 'newpassword123' })
+
+    const meAfter = await request(app).get('/auth/me').set('Authorization', `Bearer ${oldToken}`)
+    expect(meAfter.status).toBe(401)
+  })
+
+  it('rejects a new password found in a known breach', async () => {
+    await request(app)
+      .post('/auth/signup')
+      .send({ name: 'Ada Lovelace', email: 'ada@example.com', password: 'supersecret' })
+    const token = await requestResetToken('ada@example.com')
+
+    isPasswordBreached.mockResolvedValueOnce(true)
+    const response = await request(app).post('/auth/reset-password').send({ token, password: 'commonpassword' })
+
+    expect(response.status).toBe(400)
   })
 
   it('rejects an unknown token', async () => {

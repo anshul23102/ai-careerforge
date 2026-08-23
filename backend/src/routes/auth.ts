@@ -6,15 +6,33 @@ import { signToken } from '../auth/jwt'
 import { requireAuth } from '../auth/requireAuth'
 import { authLimiter } from '../rateLimiters'
 import { sendPasswordResetEmail } from '../services/email'
+import { isPasswordBreached } from '../services/breachedPassword'
 
 export const authRouter = Router()
 
 const MIN_PASSWORD_LENGTH = 8
-const SALT_ROUNDS = 10
+const SALT_ROUNDS = 12
 const RESET_TOKEN_TTL_MS = 15 * 60 * 1000
+
+// A hash of a password that never validates, used to run bcrypt.compare's
+// full cost even when the account doesn't exist — otherwise a login attempt
+// against an unknown email returns near-instantly while one against a real
+// email takes as long as a real bcrypt comparison, letting an attacker
+// enumerate registered accounts purely from response timing.
+const DUMMY_PASSWORD_HASH = '$2a$12$C6UzMDM.H6dfI/f/IKcEeOO2q8Q0.7hqU8Y0OT7wpF9WQ8Z2s1qBK'
 
 function hashResetToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex')
+}
+
+async function rejectBreachedPassword(password: string, res: Response): Promise<boolean> {
+  if (await isPasswordBreached(password)) {
+    res.status(400).json({
+      error: 'This password has appeared in a known data breach. Please choose a different one.',
+    })
+    return true
+  }
+  return false
 }
 
 function toPublicUser(user: { _id: unknown; name: string; email: string }) {
@@ -34,6 +52,8 @@ authRouter.post('/auth/signup', authLimiter, async (req: Request, res: Response)
     return
   }
 
+  if (await rejectBreachedPassword(String(password), res)) return
+
   const normalizedEmail = String(email).toLowerCase().trim()
   const existing = await UserModel.findOne({ email: normalizedEmail })
   if (existing) {
@@ -44,7 +64,7 @@ authRouter.post('/auth/signup', authLimiter, async (req: Request, res: Response)
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS)
   const user = await UserModel.create({ name, email: normalizedEmail, passwordHash })
 
-  const token = signToken(String(user._id))
+  const token = signToken(String(user._id), user.tokenVersion)
   res.status(201).json({ token, user: toPublicUser(user) })
 })
 
@@ -58,14 +78,16 @@ authRouter.post('/auth/login', authLimiter, async (req: Request, res: Response) 
 
   const normalizedEmail = String(email).toLowerCase().trim()
   const user = await UserModel.findOne({ email: normalizedEmail })
-  const passwordMatches = user ? await bcrypt.compare(password, user.passwordHash) : false
+  // Always run a bcrypt comparison, even for an unknown email, so response
+  // timing can't be used to enumerate which emails have accounts.
+  const passwordMatches = await bcrypt.compare(password, user?.passwordHash || DUMMY_PASSWORD_HASH)
 
   if (!user || !passwordMatches) {
     res.status(401).json({ error: 'Invalid email or password.' })
     return
   }
 
-  const token = signToken(String(user._id))
+  const token = signToken(String(user._id), user.tokenVersion)
   res.status(200).json({ token, user: toPublicUser(user) })
 })
 
@@ -123,6 +145,8 @@ authRouter.post('/auth/reset-password', authLimiter, async (req: Request, res: R
     return
   }
 
+  if (await rejectBreachedPassword(String(password), res)) return
+
   const tokenHash = hashResetToken(String(token))
   const user = await UserModel.findOne({
     resetTokenHash: tokenHash,
@@ -137,6 +161,10 @@ authRouter.post('/auth/reset-password', authLimiter, async (req: Request, res: R
   user.passwordHash = await bcrypt.hash(password, SALT_ROUNDS)
   user.resetTokenHash = null
   user.resetTokenExpiresAt = null
+  // Invalidates every JWT issued before this reset — if the account was
+  // compromised, this is what actually locks the attacker's session out
+  // instead of leaving their token valid for the rest of its 7-day life.
+  user.tokenVersion += 1
   await user.save()
 
   res.status(200).json({ message: 'Password reset successfully.' })
