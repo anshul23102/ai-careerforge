@@ -8,6 +8,7 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: .
     plan: free
+    healthCheckPath: /health
     envVars:
       - key: MONGODB_URI
         sync: false
@@ -16,6 +17,16 @@ services:
       - key: GROQ_API_KEY
         sync: false
       - key: GITHUB_TOKEN
+        sync: false
+      # Password-reset email delivery (see backend/src/services/email.ts) —
+      # required for POST /auth/forgot-password to actually send anything.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
+      # Used to build the link inside the reset email
+      # (https://<FRONTEND_URL>/reset-password/<token>).
+      - key: FRONTEND_URL
         sync: false
       - key: PORT
         value: 3001
