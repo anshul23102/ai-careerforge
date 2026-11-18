@@ -7,6 +7,8 @@ import { requireAuth } from '../auth/requireAuth'
 import { authLimiter } from '../rateLimiters'
 import { sendPasswordResetEmail } from '../services/email'
 import { isPasswordBreached } from '../services/breachedPassword'
+import { AssessmentModel } from '../models/Assessment'
+import { MAX_EMAIL_LENGTH, MAX_NAME_LENGTH, MAX_PASSWORD_BYTES } from '../validation'
 
 export const authRouter = Router()
 
@@ -23,6 +25,18 @@ const DUMMY_PASSWORD_HASH = '$2a$12$C6UzMDM.H6dfI/f/IKcEeOO2q8Q0.7hqU8Y0OT7wpF9W
 
 function hashResetToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex')
+}
+
+// Shared by signup and reset: length floor, and the 72-byte ceiling bcrypt can
+// actually honor. Returns an error message, or null when the password is fine.
+function passwordRuleViolation(password: string): string | null {
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`
+  }
+  if (Buffer.byteLength(password, 'utf8') > MAX_PASSWORD_BYTES) {
+    return `Password must be at most ${MAX_PASSWORD_BYTES} bytes (about ${MAX_PASSWORD_BYTES} characters).`
+  }
+  return null
 }
 
 async function rejectBreachedPassword(password: string, res: Response): Promise<boolean> {
@@ -47,8 +61,14 @@ authRouter.post('/auth/signup', authLimiter, async (req: Request, res: Response)
     return
   }
 
-  if (String(password).length < MIN_PASSWORD_LENGTH) {
-    res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` })
+  if (String(name).trim().length > MAX_NAME_LENGTH || String(email).length > MAX_EMAIL_LENGTH) {
+    res.status(400).json({ error: 'Name or email is too long.' })
+    return
+  }
+
+  const violation = passwordRuleViolation(String(password))
+  if (violation) {
+    res.status(400).json({ error: violation })
     return
   }
 
@@ -61,8 +81,8 @@ authRouter.post('/auth/signup', authLimiter, async (req: Request, res: Response)
     return
   }
 
-  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS)
-  const user = await UserModel.create({ name, email: normalizedEmail, passwordHash })
+  const passwordHash = await bcrypt.hash(String(password), SALT_ROUNDS)
+  const user = await UserModel.create({ name: String(name), email: normalizedEmail, passwordHash })
 
   const token = signToken(String(user._id), user.tokenVersion)
   res.status(201).json({ token, user: toPublicUser(user) })
@@ -80,7 +100,7 @@ authRouter.post('/auth/login', authLimiter, async (req: Request, res: Response) 
   const user = await UserModel.findOne({ email: normalizedEmail })
   // Always run a bcrypt comparison, even for an unknown email, so response
   // timing can't be used to enumerate which emails have accounts.
-  const passwordMatches = await bcrypt.compare(password, user?.passwordHash || DUMMY_PASSWORD_HASH)
+  const passwordMatches = await bcrypt.compare(String(password), user?.passwordHash || DUMMY_PASSWORD_HASH)
 
   if (!user || !passwordMatches) {
     res.status(401).json({ error: 'Invalid email or password.' })
@@ -140,8 +160,9 @@ authRouter.post('/auth/reset-password', authLimiter, async (req: Request, res: R
     return
   }
 
-  if (String(password).length < MIN_PASSWORD_LENGTH) {
-    res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` })
+  const violation = passwordRuleViolation(String(password))
+  if (violation) {
+    res.status(400).json({ error: violation })
     return
   }
 
@@ -158,7 +179,7 @@ authRouter.post('/auth/reset-password', authLimiter, async (req: Request, res: R
     return
   }
 
-  user.passwordHash = await bcrypt.hash(password, SALT_ROUNDS)
+  user.passwordHash = await bcrypt.hash(String(password), SALT_ROUNDS)
   user.resetTokenHash = null
   user.resetTokenExpiresAt = null
   // Invalidates every JWT issued before this reset — if the account was
@@ -168,4 +189,27 @@ authRouter.post('/auth/reset-password', authLimiter, async (req: Request, res: R
   await user.save()
 
   res.status(200).json({ message: 'Password reset successfully.' })
+})
+
+// Account deletion: removes the user and every assessment (and the resume text
+// inside it). The current password is required so a stolen token alone cannot
+// destroy an account. This is the right-to-erasure path for data the app
+// stores about a person.
+authRouter.delete('/auth/me', authLimiter, requireAuth, async (req: Request, res: Response) => {
+  const { password } = req.body ?? {}
+  if (!password) {
+    res.status(400).json({ error: 'password is required to delete your account.' })
+    return
+  }
+
+  const user = await UserModel.findById(res.locals.userId)
+  if (!user || !(await bcrypt.compare(String(password), user.passwordHash))) {
+    res.status(401).json({ error: 'Incorrect password.' })
+    return
+  }
+
+  await AssessmentModel.deleteMany({ userId: user._id })
+  await UserModel.deleteOne({ _id: user._id })
+
+  res.status(200).json({ deleted: true })
 })

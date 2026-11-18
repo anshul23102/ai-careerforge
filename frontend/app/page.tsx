@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Brain, Target, FileText, MessageSquare, Briefcase, ArrowRight, Zap, CheckCircle, Star, Users, Clock, BarChart3 } from "lucide-react";
+import { Brain, Target, FileText, MessageSquare, Briefcase, ArrowRight, Zap, CheckCircle, Star, Clock, BarChart3 } from "lucide-react";
 import InteractiveMesh from "../components/InteractiveMesh";
 import StarField from "../components/StarField";
 import NavAuthButtons from "../components/NavAuthButtons";
@@ -9,7 +9,7 @@ const dimensions = [
   {
     icon: Brain,
     title: "Technical Skills",
-    description: "DSA, system design, coding proficiency, and CS fundamentals — benchmarked against top-tier hiring bars.",
+    description: "DSA, system design, coding proficiency, and CS fundamentals, scored by an AI model against your target role and experience level.",
     color: "#6eb4ff",
     rgb: "110,180,255",
     stat: "5 areas",
@@ -17,7 +17,7 @@ const dimensions = [
   {
     icon: FileText,
     title: "Resume Quality",
-    description: "AI scans your experience, projects, and presentation against what Google, Amazon, and Meta recruiters look for.",
+    description: "AI reviews your experience, projects, and presentation for clarity and impact, and tells you what to sharpen.",
     color: "#a5b4fc",
     rgb: "165,180,252",
     stat: "AI scored",
@@ -25,7 +25,7 @@ const dimensions = [
   {
     icon: MessageSquare,
     title: "Communication",
-    description: "Self-assessment calibrated to industry norms — how your articulation holds up under real interview pressure.",
+    description: "Your own rating of how clearly you explain your work, factored into the overall verdict.",
     color: "#c084fc",
     rgb: "192,132,252",
     stat: "5 levels",
@@ -33,7 +33,7 @@ const dimensions = [
   {
     icon: Briefcase,
     title: "Portfolio Strength",
-    description: "Your GitHub, LinkedIn, and project presence — the digital footprint that speaks before you say a word.",
+    description: "Your GitHub, LinkedIn, and portfolio site, read live so the feedback names your real projects.",
     color: "#34d399",
     rgb: "52,211,153",
     stat: "3 signals",
@@ -115,7 +115,7 @@ export default function Home() {
           {/* Stat pills */}
           <div className="slide-up-delay-4 flex flex-wrap items-center justify-center gap-3 text-sm">
             {[
-              { icon: Users, value: "10K+", label: "Assessments done" },
+              { icon: FileText, value: "7 formats", label: "Resume upload" },
               { icon: Clock, value: "< 2 min", label: "To your score" },
               { icon: BarChart3, value: "4 dimensions", label: "Analyzed" },
               { icon: Star, value: "Free", label: "Always" },
@@ -154,7 +154,7 @@ export default function Home() {
               <span className="gradient-text-blue">Complete picture.</span>
             </h2>
             <p className="text-white/45 text-lg max-w-sm leading-relaxed md:text-right" style={{ letterSpacing: "-0.01em" }}>
-              Every angle that matters to a real interviewer, evaluated by AI that&apos;s seen it all.
+              Every angle that matters to an interviewer, evaluated by an AI model from your real profile data.
             </p>
           </div>
 
@@ -305,7 +305,7 @@ export default function Home() {
           </h2>
 
           <p className="text-white/45 text-xl max-w-lg mx-auto leading-relaxed mb-12" style={{ letterSpacing: "-0.01em" }}>
-            Thousands of engineers used AI CareerForge to walk into interviews knowing exactly what to say.
+            Find out which gaps to close before your next interview, and get a plan for closing them.
           </p>
 
           <Link href="/assess" className="btn-primary inline-flex items-center gap-3 text-lg px-10 py-4">

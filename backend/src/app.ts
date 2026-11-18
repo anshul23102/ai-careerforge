@@ -10,6 +10,14 @@ import { corsOptions } from './corsOptions'
 
 export function createApp(): Express {
   const app = express()
+  // On Render the app sits behind a reverse proxy, so without this Express
+  // reports the PROXY's address as every request's IP. The rate limiters key
+  // on req.ip, which would put all users in one shared bucket: one abusive
+  // client could exhaust the limit for everyone. Trusting exactly one hop
+  // makes req.ip the address the proxy saw, and a client-supplied
+  // X-Forwarded-For value cannot override it (the proxy appends, and Express
+  // reads from the right). Set TRUST_PROXY_HOPS=0 when running without a proxy.
+  app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1))
   // This is a JSON API with no HTML views of its own, so it doesn't need
   // helmet's browser-rendering defaults (CSP, COEP, etc, which are meant for
   // pages the server itself renders) — just the headers relevant to an API:

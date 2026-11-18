@@ -139,3 +139,28 @@ export async function getPublicAssessment(id: string): Promise<PublicAssessment>
   const res = await fetch(`${BACKEND_URL}/assessments/${id}/public`)
   return parseJsonOrThrow(res) as Promise<PublicAssessment>
 }
+
+export async function unshareAssessment(token: string, id: string): Promise<{ id: string; isPublic: boolean }> {
+  const res = await fetch(`${BACKEND_URL}/assessments/${id}/share`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  return parseJsonOrThrow(res) as Promise<{ id: string; isPublic: boolean }>
+}
+
+export async function deleteAssessment(token: string, id: string): Promise<{ deleted: boolean }> {
+  const res = await fetch(`${BACKEND_URL}/assessments/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  return parseJsonOrThrow(res) as Promise<{ deleted: boolean }>
+}
+
+export async function deleteAccount(token: string, password: string): Promise<{ deleted: boolean }> {
+  const res = await fetch(`${BACKEND_URL}/auth/me`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ password }),
+  })
+  return parseJsonOrThrow(res) as Promise<{ deleted: boolean }>
+}

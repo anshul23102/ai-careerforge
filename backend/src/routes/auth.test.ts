@@ -253,3 +253,80 @@ describe('POST /auth/reset-password', () => {
     expect(response.status).toBe(400)
   })
 })
+
+describe('password and field limits', () => {
+  it('rejects a password longer than the 72 bytes bcrypt can use', async () => {
+    const response = await request(app)
+      .post('/auth/signup')
+      .send({ name: 'Ada', email: 'ada@example.com', password: 'a'.repeat(73) })
+
+    expect(response.status).toBe(400)
+    expect(response.body.error).toContain('72')
+  })
+
+  it('counts bytes, not characters, for the password ceiling', async () => {
+    // 40 characters but 80 bytes in UTF-8.
+    const response = await request(app)
+      .post('/auth/signup')
+      .send({ name: 'Ada', email: 'ada@example.com', password: 'é'.repeat(40) })
+
+    expect(response.status).toBe(400)
+  })
+
+  it('rejects an over-long name', async () => {
+    const response = await request(app)
+      .post('/auth/signup')
+      .send({ name: 'n'.repeat(101), email: 'ada@example.com', password: 'supersecret' })
+
+    expect(response.status).toBe(400)
+  })
+})
+
+describe('DELETE /auth/me', () => {
+  async function signupAndGetToken() {
+    const signup = await request(app)
+      .post('/auth/signup')
+      .send({ name: 'Ada Lovelace', email: 'ada@example.com', password: 'supersecret' })
+    return signup.body.token as string
+  }
+
+  it('deletes the account and its assessments when the password is correct', async () => {
+    const token = await signupAndGetToken()
+    const user = await UserModel.findOne({ email: 'ada@example.com' })
+    await mongoose.connection.collection('assessments').insertOne({ userId: user!._id, resumeText: 'private' })
+
+    const response = await request(app).delete('/auth/me').set('Authorization', `Bearer ${token}`).send({ password: 'supersecret' })
+
+    expect(response.status).toBe(200)
+    expect(await UserModel.findOne({ email: 'ada@example.com' })).toBeNull()
+    expect(await mongoose.connection.collection('assessments').countDocuments({ userId: user!._id })).toBe(0)
+  })
+
+  it('refuses when the password is wrong, leaving the account intact', async () => {
+    const token = await signupAndGetToken()
+
+    const response = await request(app).delete('/auth/me').set('Authorization', `Bearer ${token}`).send({ password: 'wrongpassword' })
+
+    expect(response.status).toBe(401)
+    expect(await UserModel.findOne({ email: 'ada@example.com' })).not.toBeNull()
+  })
+
+  it('requires a password in the body', async () => {
+    const token = await signupAndGetToken()
+    const response = await request(app).delete('/auth/me').set('Authorization', `Bearer ${token}`).send({})
+    expect(response.status).toBe(400)
+  })
+
+  it('requires authentication', async () => {
+    const response = await request(app).delete('/auth/me').send({ password: 'supersecret' })
+    expect(response.status).toBe(401)
+  })
+
+  it('invalidates the old token after deletion', async () => {
+    const token = await signupAndGetToken()
+    await request(app).delete('/auth/me').set('Authorization', `Bearer ${token}`).send({ password: 'supersecret' })
+
+    const me = await request(app).get('/auth/me').set('Authorization', `Bearer ${token}`)
+    expect(me.status).toBe(401)
+  })
+})

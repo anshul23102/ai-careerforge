@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Clock, ArrowRight, Brain } from 'lucide-react'
+import { Clock, ArrowRight, Brain, Trash2 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-import { listAssessments, type AssessmentSummary } from '../../lib/backend'
+import { listAssessments, deleteAssessment, deleteAccount, BackendError, type AssessmentSummary } from '../../lib/backend'
 
 function getLevelColor(level?: string): string {
   switch (level) {
@@ -19,8 +19,38 @@ function getLevelColor(level?: string): string {
 
 export default function HistoryPage() {
   const router = useRouter()
-  const { token, isLoading: isAuthLoading } = useAuth()
+  const { token, isLoading: isAuthLoading, logout } = useAuth()
   const [assessments, setAssessments] = useState<AssessmentSummary[] | null>(null)
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteError, setDeleteError] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  async function handleDeleteAssessment(id: string) {
+    if (!token) return
+    if (!window.confirm('Delete this assessment permanently? This also deletes the resume text stored with it, and cannot be undone.')) return
+    try {
+      await deleteAssessment(token, id)
+      setAssessments((current) => (current ? current.filter((a) => a.id !== id) : current))
+    } catch {
+      window.alert('Could not delete this assessment. Please try again.')
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!token) return
+    setDeleteError('')
+    setIsDeleting(true)
+    try {
+      await deleteAccount(token, deletePassword)
+      logout()
+      router.push('/')
+    } catch (err) {
+      setDeleteError(err instanceof BackendError ? err.message : 'Something went wrong. Please try again.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   useEffect(() => {
     if (isAuthLoading) return
@@ -70,10 +100,10 @@ export default function HistoryPage() {
             {assessments.map((a) => {
               const color = getLevelColor(a.level)
               return (
+                <div key={a.id} className="flex items-stretch gap-2">
                 <Link
-                  key={a.id}
                   href={`/results/${a.id}`}
-                  className="glass-strong rounded-2xl p-5 flex items-center justify-between gap-4 hover:border-white/20 transition-all duration-300 block"
+                  className="glass-strong rounded-2xl p-5 flex items-center justify-between gap-4 hover:border-white/20 transition-all duration-300 flex-1"
                   style={{ border: '1px solid rgba(255,255,255,0.08)' }}
                 >
                   <div className="flex items-center gap-4">
@@ -94,6 +124,16 @@ export default function HistoryPage() {
                   </div>
                   <ArrowRight size={18} className="text-white/30 flex-shrink-0" />
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteAssessment(a.id)}
+                  aria-label={`Delete assessment for ${a.targetRole}`}
+                  className="glass-strong rounded-2xl px-4 text-white/30 hover:text-red-400 transition-colors"
+                  style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+                >
+                  <Trash2 size={16} />
+                </button>
+                </div>
               )
             })}
           </div>
@@ -104,6 +144,50 @@ export default function HistoryPage() {
             <Brain size={16} />
             New Assessment
           </Link>
+        </div>
+
+        <div className="mt-16 text-center">
+          {!showDeleteAccount ? (
+            <button
+              type="button"
+              onClick={() => setShowDeleteAccount(true)}
+              className="text-sm text-white/30 hover:text-red-400 transition-colors"
+            >
+              Delete my account and all my data
+            </button>
+          ) : (
+            <div className="glass-strong rounded-2xl p-6 text-left space-y-4" style={{ border: '1px solid rgba(239,68,68,0.25)' }}>
+              <p className="text-sm text-white/70">
+                This permanently deletes your account, every assessment, and the resume text stored with them. Shared links stop working immediately. Enter your password to confirm.
+              </p>
+              <input
+                type="password"
+                className="input-field"
+                placeholder="Your password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+              />
+              {deleteError && <div className="text-sm text-red-400">{deleteError}</div>}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  disabled={isDeleting || !deletePassword}
+                  onClick={handleDeleteAccount}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+                  style={{ background: 'rgba(239,68,68,0.8)' }}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete everything'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowDeleteAccount(false); setDeletePassword(''); setDeleteError('') }}
+                  className="px-4 py-2 rounded-xl text-sm text-white/60 hover:text-white"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

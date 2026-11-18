@@ -18,6 +18,15 @@ const assessmentSchema = new Schema({
   communicationRating: { type: Number, required: true },
   hasProjects: { type: Boolean, required: true },
   result: { type: Schema.Types.Mixed, required: true },
+  // Which model and prompt version produced `result`, how many attempts it
+  // took, and how long the call ran. Lets output quality and latency be
+  // compared across prompt versions instead of guessed at.
+  meta: {
+    model: { type: String },
+    promptVersion: { type: String },
+    attempts: { type: Number },
+    latencyMs: { type: Number },
+  },
   isPublic: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 })

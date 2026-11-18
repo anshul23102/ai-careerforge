@@ -1,27 +1,24 @@
 import { Router, type Request, type Response } from 'express'
 import Groq from 'groq-sdk'
-import type { AssessmentData } from '@ai-careerforge/shared'
 import { requireAuth } from '../auth/requireAuth'
 import { UserModel } from '../models/User'
 import { AssessmentModel } from '../models/Assessment'
 import { fetchGitHubData } from '../services/github'
 import { fetchPortfolioData } from '../services/portfolio'
-import { buildPrompt, getAnalysis } from '../services/groq'
+import { buildPrompt, runAnalysis } from '../services/groq'
+import { assessmentInputSchema, describeFieldErrors } from '../validation'
 import { assessmentLimiter } from '../rateLimiters'
 
 export const assessmentsRouter = Router()
 
-const REQUIRED_FIELDS: (keyof AssessmentData)[] = ['targetRole', 'experienceLevel', 'resumeText', 'skills']
-
 assessmentsRouter.post('/assessments', requireAuth, assessmentLimiter, async (req: Request, res: Response) => {
   try {
-    const data = req.body as AssessmentData
-
-    const missing = REQUIRED_FIELDS.filter((field) => !data?.[field])
-    if (missing.length > 0) {
-      res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` })
+    const parsedInput = assessmentInputSchema.safeParse(req.body)
+    if (!parsedInput.success) {
+      res.status(400).json({ error: describeFieldErrors(parsedInput.error) })
       return
     }
+    const data = parsedInput.data
 
     const user = await UserModel.findById(res.locals.userId)
     if (!user) {
@@ -34,9 +31,9 @@ assessmentsRouter.post('/assessments', requireAuth, assessmentLimiter, async (re
       data.portfolioUrl?.trim() ? fetchPortfolioData(data.portfolioUrl) : Promise.resolve('Portfolio URL not provided.'),
     ])
 
-    const prompt = buildPrompt({ ...data, name: user.name }, { github: githubData, portfolio: portfolioData })
+    const prompt = buildPrompt({ ...data, name: user.name, email: user.email }, { github: githubData, portfolio: portfolioData })
     const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
-    const result = await getAnalysis(prompt, client)
+    const { result, meta } = await runAnalysis(prompt, client)
 
     const assessment = await AssessmentModel.create({
       userId: user._id,
@@ -50,6 +47,7 @@ assessmentsRouter.post('/assessments', requireAuth, assessmentLimiter, async (re
       communicationRating: data.communicationRating,
       hasProjects: data.hasProjects,
       result,
+      meta,
     })
 
     res.status(201).json({ id: String(assessment._id), result })
@@ -155,4 +153,46 @@ assessmentsRouter.get('/assessments/:id/public', async (req: Request, res: Respo
   }
 
   res.status(200).json({ result: assessment.result, createdAt: assessment.createdAt })
+})
+
+// Revokes a share link. Without this, sharing was a one-way door: once an
+// owner shared an assessment there was no way to take the link back.
+assessmentsRouter.delete('/assessments/:id/share', requireAuth, async (req: Request, res: Response) => {
+  let assessment
+  try {
+    assessment = await AssessmentModel.findOneAndUpdate(
+      { _id: req.params.id, userId: res.locals.userId },
+      { isPublic: false },
+      { returnDocument: 'after' }
+    ).lean()
+  } catch {
+    res.status(404).json({ error: 'Assessment not found.' })
+    return
+  }
+
+  if (!assessment) {
+    res.status(404).json({ error: 'Assessment not found.' })
+    return
+  }
+
+  res.status(200).json({ id: String(assessment._id), isPublic: false })
+})
+
+// Permanently deletes one assessment, including the resume text stored with
+// it. Owner-only; a non-owner gets the same 404 as a nonexistent id.
+assessmentsRouter.delete('/assessments/:id', requireAuth, async (req: Request, res: Response) => {
+  let deleted
+  try {
+    deleted = await AssessmentModel.findOneAndDelete({ _id: req.params.id, userId: res.locals.userId }).lean()
+  } catch {
+    res.status(404).json({ error: 'Assessment not found.' })
+    return
+  }
+
+  if (!deleted) {
+    res.status(404).json({ error: 'Assessment not found.' })
+    return
+  }
+
+  res.status(200).json({ deleted: true })
 })

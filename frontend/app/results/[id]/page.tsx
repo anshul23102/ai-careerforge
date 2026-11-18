@@ -6,7 +6,7 @@ import Link from 'next/link'
 import ResultsDashboard from '../../../components/ResultsDashboard'
 import InteractiveMesh from '../../../components/InteractiveMesh'
 import { useAuth } from '../../../contexts/AuthContext'
-import { getAssessment, shareAssessment, type AssessmentDetail } from '../../../lib/backend'
+import { getAssessment, shareAssessment, unshareAssessment, type AssessmentDetail } from '../../../lib/backend'
 
 export default function ResultsPage() {
   const params = useParams<{ id: string }>()
@@ -68,14 +68,35 @@ export default function ResultsPage() {
   async function resolveShareUrl(): Promise<string> {
     if (!token) return window.location.href
     await shareAssessment(token, params.id)
+    setAssessment((current) => (current ? { ...current, isPublic: true } : current))
     return `${window.location.origin}/share/${params.id}`
   }
 
+  async function handleStopSharing() {
+    if (!token) return
+    try {
+      await unshareAssessment(token, params.id)
+      setAssessment((current) => (current ? { ...current, isPublic: false } : current))
+    } catch {
+      window.alert('Could not stop sharing. Please try again.')
+    }
+  }
+
   return (
-    <ResultsDashboard
-      result={assessment.result}
-      candidateName={user?.name || 'there'}
-      resolveShareUrl={resolveShareUrl}
-    />
+    <>
+      {assessment.isPublic && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 glass-strong rounded-2xl px-5 py-3 flex items-center gap-4 text-sm" style={{ border: '1px solid rgba(255,255,255,0.12)' }}>
+          <span className="text-white/70">This result has a public link.</span>
+          <button type="button" onClick={handleStopSharing} className="font-semibold text-red-400 hover:text-red-300">
+            Stop sharing
+          </button>
+        </div>
+      )}
+      <ResultsDashboard
+        result={assessment.result}
+        candidateName={user?.name || 'there'}
+        resolveShareUrl={resolveShareUrl}
+      />
+    </>
   )
 }

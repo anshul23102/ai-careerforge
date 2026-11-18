@@ -93,6 +93,112 @@ describe('POST /assessments', () => {
 
     expect(response.status).toBe(400)
   })
+
+  it('rejects out-of-range skill ratings', async () => {
+    const response = await request(app)
+      .post('/assessments')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ ...validPayload, skills: { ...validPayload.skills, dsa: 9999 } })
+
+    expect(response.status).toBe(400)
+    expect(response.body.error).toContain('skills.dsa')
+  })
+
+  it('rejects an unknown experience level', async () => {
+    const response = await request(app)
+      .post('/assessments')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ ...validPayload, experienceLevel: 'wizard' })
+
+    expect(response.status).toBe(400)
+  })
+
+  it('rejects an oversized resume', async () => {
+    const response = await request(app)
+      .post('/assessments')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ ...validPayload, resumeText: 'x'.repeat(30001) })
+
+    expect(response.status).toBe(400)
+    expect(response.body.error).toContain('resumeText')
+  })
+
+  it('stores which model and prompt version produced the result', async () => {
+    const created = await request(app).post('/assessments').set('Authorization', `Bearer ${token}`).send(validPayload)
+    const stored = await mongoose.models.Assessment.findById(created.body.id).lean() as { meta?: { model?: string; promptVersion?: string; attempts?: number } }
+
+    expect(stored.meta?.model).toBe('openai/gpt-oss-120b')
+    expect(stored.meta?.promptVersion).toEqual(expect.any(String))
+    expect(stored.meta?.attempts).toBe(1)
+  })
+})
+
+describe('DELETE /assessments/:id/share', () => {
+  it('revokes a share link so the public page stops working', async () => {
+    const created = await request(app).post('/assessments').set('Authorization', `Bearer ${token}`).send(validPayload)
+    await request(app).patch(`/assessments/${created.body.id}/share`).set('Authorization', `Bearer ${token}`)
+    expect((await request(app).get(`/assessments/${created.body.id}/public`)).status).toBe(200)
+
+    const revoke = await request(app).delete(`/assessments/${created.body.id}/share`).set('Authorization', `Bearer ${token}`)
+    expect(revoke.status).toBe(200)
+    expect(revoke.body.isPublic).toBe(false)
+    expect((await request(app).get(`/assessments/${created.body.id}/public`)).status).toBe(404)
+  })
+
+  it('requires authentication', async () => {
+    const response = await request(app).delete('/assessments/000000000000000000000000/share')
+    expect(response.status).toBe(401)
+  })
+
+  it('returns 404 for a non-owner', async () => {
+    const created = await request(app).post('/assessments').set('Authorization', `Bearer ${token}`).send(validPayload)
+    const other = await UserModel.create({ name: 'Eve', email: 'eve-unshare@example.com', passwordHash: 'hash' })
+    const otherToken = signToken(String(other._id), other.tokenVersion)
+
+    const response = await request(app).delete(`/assessments/${created.body.id}/share`).set('Authorization', `Bearer ${otherToken}`)
+    expect(response.status).toBe(404)
+  })
+})
+
+describe('DELETE /assessments/:id', () => {
+  it('permanently deletes the assessment for its owner', async () => {
+    const created = await request(app).post('/assessments').set('Authorization', `Bearer ${token}`).send(validPayload)
+
+    const response = await request(app).delete(`/assessments/${created.body.id}`).set('Authorization', `Bearer ${token}`)
+    expect(response.status).toBe(200)
+
+    const after = await request(app).get(`/assessments/${created.body.id}`).set('Authorization', `Bearer ${token}`)
+    expect(after.status).toBe(404)
+    expect(await mongoose.models.Assessment.countDocuments({ _id: created.body.id })).toBe(0)
+  })
+
+  it('also removes a shared assessment from the public page', async () => {
+    const created = await request(app).post('/assessments').set('Authorization', `Bearer ${token}`).send(validPayload)
+    await request(app).patch(`/assessments/${created.body.id}/share`).set('Authorization', `Bearer ${token}`)
+    await request(app).delete(`/assessments/${created.body.id}`).set('Authorization', `Bearer ${token}`)
+
+    expect((await request(app).get(`/assessments/${created.body.id}/public`)).status).toBe(404)
+  })
+
+  it('does not let another user delete it', async () => {
+    const created = await request(app).post('/assessments').set('Authorization', `Bearer ${token}`).send(validPayload)
+    const other = await UserModel.create({ name: 'Eve', email: 'eve-delete@example.com', passwordHash: 'hash' })
+    const otherToken = signToken(String(other._id), other.tokenVersion)
+
+    const response = await request(app).delete(`/assessments/${created.body.id}`).set('Authorization', `Bearer ${otherToken}`)
+    expect(response.status).toBe(404)
+    expect(await mongoose.models.Assessment.countDocuments({ _id: created.body.id })).toBe(1)
+  })
+
+  it('requires authentication', async () => {
+    const response = await request(app).delete('/assessments/000000000000000000000000')
+    expect(response.status).toBe(401)
+  })
+
+  it('returns 404 for a malformed id', async () => {
+    const response = await request(app).delete('/assessments/not-an-id').set('Authorization', `Bearer ${token}`)
+    expect(response.status).toBe(404)
+  })
 })
 
 describe('GET /assessments', () => {

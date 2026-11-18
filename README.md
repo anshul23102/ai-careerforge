@@ -1,185 +1,140 @@
-<div align="center">
+# AI CareerForge
 
-# ⚡ AI CareerForge
+An interview readiness assessment. You upload a resume, rate your skills, and optionally link a GitHub profile and portfolio site. The app reads those sources, asks a large language model to evaluate the candidate, and returns a 0 to 100 readiness score across four dimensions, with strengths, prioritized improvements, and a phased action plan.
 
-### Know if you're interview-ready in under 2 minutes.
+Live app: https://ai-careerforge.vercel.app
 
-[![Live Demo](https://img.shields.io/badge/🟢_Live_Demo-ai--careerforge.vercel.app-6eb4ff?style=for-the-badge)](https://ai-careerforge.vercel.app)
-[![Next.js](https://img.shields.io/badge/Next.js-16.2-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
-[![Groq AI](https://img.shields.io/badge/Groq-GPT--OSS_120B-f97316?style=for-the-badge)](https://groq.com)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
-[![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com)
+## What it does
 
-</div>
+1. **Account.** Email and password signup. Passwords are hashed with bcrypt, sessions use signed JWTs.
+2. **Resume upload.** PDF, DOCX, DOC, RTF, LaTeX (.tex), TXT, and Markdown are parsed to text on the server. Scanned or image-only documents are not supported (there is no OCR).
+3. **Live enrichment.** If a GitHub URL is given, the backend reads the public profile and top repositories from the GitHub API. If a portfolio URL is given, the backend fetches the page, and falls back to a headless browser for JavaScript-rendered sites.
+4. **AI analysis.** The collected data is sent to `openai/gpt-oss-120b` on Groq. The response is validated against a strict schema before it is stored or shown.
+5. **Results.** A score gauge, radar chart, per-dimension breakdown, strengths, improvements, and an action plan. Past assessments are listed in a history page.
+6. **Sharing.** The owner can publish a read-only link that exposes only the AI analysis, never the resume, skills, or contact URLs, and can revoke it at any time.
+7. **Data control.** Any assessment can be deleted, and an account can be deleted together with everything stored about it.
 
-<br/>
+The score is an LLM judgement based on self-reported ratings plus public profile data. It is guidance for preparation, not a validated hiring metric.
 
-## 🎯 What is AI CareerForge?
+## Architecture
 
-**AI CareerForge** is an AI-powered Interview Readiness Assessment tool that evaluates your profile across **4 critical dimensions** and delivers a personalised score from 0 to 100, with specific strengths, actionable improvements, and a week-by-week action plan.
+```
+Browser (Next.js on Vercel)
+   |  HTTPS, JSON, Authorization: Bearer <JWT>
+   v
+Express API (Docker on Render)
+   |-- /auth/*          signup, login, me, forgot/reset password, delete account
+   |-- /resume/parse    multipart upload, parsed in memory
+   |-- /assessments/*   create, list, read, share, unshare, delete, public view
+   |-- /health          liveness and database status
+   |
+   |-- MongoDB Atlas    users, assessments
+   |-- GitHub REST API  profile and repos
+   |-- Portfolio site   plain fetch, headless Chromium fallback (SSRF guarded)
+   |-- Groq API         gpt-oss-120b analysis
+   |-- Resend           password reset email
+```
 
-Built for engineers at every stage: freshers, interns, and experienced developers who want to know exactly where they stand before walking into their next interview.
+The repository is an npm workspaces monorepo:
 
-> Free account (30 seconds), results in under 2 minutes. Completely free, no credit card.
-
-<br/>
-
-## 📸 Screenshots
-<img width="1420" height="702" alt="Screenshot 2026-05-14 at 9 52 15 PM" src="https://github.com/user-attachments/assets/3e948476-9d0e-43b8-bffb-4293c4426149" />
-
-<img width="1406" height="702" alt="Screenshot 2026-05-14 at 9 52 33 PM" src="https://github.com/user-attachments/assets/32c1f82e-213d-4aef-a238-daae9ecf3dee" />
-
-<img width="1447" height="700" alt="Screenshot 2026-05-14 at 9 56 03 PM" src="https://github.com/user-attachments/assets/6ee5d26a-f146-4661-99a7-1633e0bca96f" />
-
-<img width="1432" height="692" alt="Screenshot 2026-05-14 at 9 56 10 PM" src="https://github.com/user-attachments/assets/025f6a78-7e4f-4245-8ece-70a1638f518b" />
-
-
-
-
-<br/>
-
-## ✨ Features
-
-| | Feature | Description |
-|---|---|---|
-| 🧠 | **4-Dimension AI Analysis** | Technical Skills, Resume Quality, Communication, Portfolio Strength |
-| 🤖 | **Real Groq AI** | GPT-OSS 120B analyzes your full profile with deep context |
-| 🐙 | **Live GitHub Fetch** | Pulls your real repos, languages, stars and bio via GitHub API |
-| 🌐 | **Portfolio Scraping** | Reads your actual portfolio site and factors it into scoring |
-| 📊 | **Visual Dashboard** | Animated score gauge, radar chart, dimension bars with insights |
-| 🗓️ | **Personalised Action Plan** | Week-by-week roadmap tailored to your specific gaps |
-| 🔗 | **Share Your Score** | LinkedIn, X, copy link, or download a PNG score card |
-| 🎨 | **Premium Dark UI** | Apple-inspired design with interactive cursor mesh background |
-| ⚡ | **Instant Results** | Groq inference in seconds. No waiting, no account needed |
-
-<br/>
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
+| Path | Purpose |
 |---|---|
-| ⚛️ Framework | Next.js 16.2 (App Router) |
-| 📘 Language | TypeScript 5 |
-| 🎨 Styling | Tailwind CSS v4 |
-| ✨ Animations | Framer Motion v12 |
-| 📈 Charts | Recharts v3 |
-| 🎯 Icons | Lucide React |
-| 🤖 AI Model | Groq — GPT-OSS 120B |
-| 🖼️ Canvas FX | Custom Spring Physics Mesh |
-| 🚀 Deployment | Vercel |
+| `frontend/` | Next.js 16 App Router UI (TypeScript, Tailwind v4, Framer Motion, Recharts) |
+| `backend/` | Express 5 API (TypeScript, Mongoose, Zod, Vitest, Supertest) |
+| `packages/parsers/` | Resume text extraction for each supported file format |
+| `packages/shared/` | Types and helpers shared by frontend and backend |
+| `docs/` | Design specs written before each major phase |
 
-<br/>
+## The analysis pipeline
 
-## 🚀 Getting Started
+1. `POST /assessments` validates the body with Zod: every field has a type, range, and length bound (for example skill ratings are integers from 1 to 10 and the resume is at most 30,000 characters).
+2. GitHub and portfolio data are fetched in parallel. A failure in either degrades to a short placeholder string rather than failing the request.
+3. The prompt is assembled. Resume, GitHub, and portfolio text are untrusted, so each is wrapped in its own tag (`<resume>`, `<github_data>`, `<portfolio_data>`), any attempt to close or reopen those tags from inside the text is stripped, and the system prompt tells the model to evaluate that content and never obey it.
+4. The model is called with temperature 0.3.
+5. The reply is parsed and validated against `analysisResultSchema`. Scores are rounded and clamped to 0 to 100. A malformed or schema-violating reply triggers one corrective retry in which the exact problem is fed back to the model.
+6. The result is stored together with run metadata: model name, prompt version, attempt count, and latency. This makes output quality and latency comparable across prompt versions.
 
-### 1. Clone the repo
+## Security
+
+- Passwords: bcrypt (cost 12), 8 to 72 byte limit (bcrypt ignores bytes past 72), and a Have I Been Pwned k-anonymity check that never sends the password or its full hash.
+- Sessions: HS256 JWT with the algorithm pinned on verification and a per-user `tokenVersion`. A password reset bumps the version, which invalidates every earlier token immediately.
+- Login timing: an unknown email still runs a full bcrypt comparison, so response time does not reveal which emails are registered.
+- Password reset: random 32 byte token, only its SHA-256 hash is stored, 15 minute expiry, single use, identical response whether or not the email exists.
+- SSRF: user-supplied portfolio URLs are restricted to http and https, resolved, and rejected if any address is private, loopback, link-local (including cloud metadata), or reserved. The check repeats on every redirect and on every request made by the headless browser.
+- Rate limiting: separate limits for auth, assessment creation, and resume parsing. The app trusts exactly one proxy hop so limits apply per client IP.
+- Transport and headers: strict CORS allow-list, Helmet on the API, CSP, HSTS, and frame protection on the frontend.
+- Input: Zod bounds on every assessment field, 1 MB JSON body cap, 5 MB upload cap, uploads parsed in memory and never written to disk.
+- Errors: internal error detail is logged server-side and never returned to clients.
+- Containers: `.dockerignore` keeps `.env` files out of image layers.
+
+## Testing
+
+```bash
+cd backend && npm test      # API, auth, validation, SSRF, rate limits (MongoDB in memory)
+cd frontend && npm test     # API client
+cd packages/parsers && npm test
+cd packages/shared && npm test
+```
+
+Backend tests run against `mongodb-memory-server` and mock only the network edges (Groq, email, breached-password lookup), so routes, middleware, and Mongoose models are exercised for real.
+
+## Running locally
+
+Prerequisites: Node 20 or newer, a MongoDB connection string, and a Groq API key.
 
 ```bash
 git clone https://github.com/anshul23102/ai-careerforge.git
 cd ai-careerforge
-```
-
-### 2. Install dependencies
-
-```bash
 npm install
 ```
 
-### 3. Add your Groq API key
-
-Create a `.env.local` file in the root:
+Create `backend/.env`:
 
 ```env
-GROQ_API_KEY=your_groq_api_key_here
+MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>/?appName=Cluster0
+JWT_SECRET=<long random string>
+GROQ_API_KEY=<groq key>
+RESEND_API_KEY=<resend key>
+RESEND_FROM_EMAIL=onboarding@resend.dev
+FRONTEND_URL=http://localhost:3000
+# optional
+# GITHUB_TOKEN=<token, raises the GitHub API limit from 60 to 5000 per hour>
+# ALLOWED_ORIGINS=https://extra.example.com
 ```
 
-> 🔑 Get your **free** API key at [console.groq.com](https://console.groq.com). No credit card required.
+Create `frontend/.env.local`:
 
-### 4. Run locally
+```env
+NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
+```
+
+Run each in its own terminal:
 
 ```bash
-npm run dev
+cd backend && npm run dev     # http://localhost:3001
+cd frontend && npm run dev    # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+## Deployment
 
-<br/>
+- Frontend: Vercel, root directory `frontend`.
+- Backend: Render web service built from `backend/Dockerfile` with the monorepo root as the build context (see `render.yaml`). The image installs system Chromium for the portfolio renderer.
+- Database: MongoDB Atlas.
 
-## 🔄 How It Works
+## Known limitations
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     USER JOURNEY                            │
-├─────────────────────────────────────────────────────────────┤
-│  Step 1 (~30s)  │  Profile: name, role, experience, goals   │
-│  Step 2 (~45s)  │  Resume: upload PDF/DOCX/DOC/RTF/TEX/TXT  │
-│  Step 3 (~30s)  │  Skills: rate DSA, design, coding 1 to 10 │
-│  Step 4 (~15s)  │  Portfolio: GitHub, LinkedIn, site URLs   │
-└────────────────────────────┬────────────────────────────────┘
-                             │
-                             ▼
-        ┌────────────────────────────────────┐
-        │  POST /api/analyze                 │
-        │  ├── Fetch GitHub API (live data)  │
-        │  ├── Scrape portfolio site         │
-        │  └── Call Groq GPT-OSS 120B         │
-        └────────────────────────────────────┘
-                             │
-                             ▼
-        ┌────────────────────────────────────┐
-        │  Results Dashboard                 │
-        │  ├── 0 to 100 readiness score      │
-        │  ├── 4-dimension breakdown         │
-        │  ├── Strengths and improvements    │
-        │  └── Week-by-week action plan      │
-        └────────────────────────────────────┘
-```
+These are deliberate trade-offs or open items, listed so they are not surprises.
 
-<br/>
+- **Cold starts.** The backend runs on Render's free tier and sleeps after about 15 minutes idle, so the first request after a quiet period can take roughly 30 to 60 seconds. A scheduled GitHub Actions ping helps but GitHub does not guarantee the schedule.
+- **Password reset email.** Resend's shared test sender only delivers to the account owner. Reset emails reach other users only after a sending domain is verified.
+- **No email verification.** Anyone can register with any address.
+- **Token storage.** The JWT is kept in `localStorage`, which is readable by any script on the page. The mitigations are a strict CSP, no `dangerouslySetInnerHTML`, and React's default escaping. Moving to httpOnly cookies would be stronger but needs cross-site cookie and CSRF handling.
+- **Score validity.** Scores come from an LLM and from self-ratings. They are not calibrated against real interview outcomes.
+- **Prompt injection.** Fencing and instructions reduce it but cannot eliminate it. Output validation bounds the damage to a wrong score for the person who submitted the text.
+- **Scanned resumes.** No OCR, so image-only PDFs are rejected.
+- **DNS rebinding.** The SSRF guard resolves a hostname and then the HTTP client resolves it again. Pinning the validated address to the connection would close that gap.
+- **Headless browser sandbox.** Chromium runs with its internal sandbox disabled because the container is unprivileged. The URL allow-list and the container boundary are the compensating controls.
 
-## 🏗️ Project Structure
+## License
 
-```
-ai-careerforge/
-├── app/
-│   ├── page.tsx                 # Landing page
-│   ├── layout.tsx               # Root layout (Space Grotesk font)
-│   ├── globals.css              # Design system + Tailwind v4
-│   ├── assess/
-│   │   └── page.tsx             # Assessment page
-│   ├── results/
-│   │   └── page.tsx             # Results page (reads URL params)
-│   └── api/
-│       └── analyze/
-│           └── route.ts         # AI analysis endpoint
-│
-├── components/
-│   ├── AssessmentForm.tsx       # 4-step form with animations
-│   ├── ResultsDashboard.tsx     # Score + charts + action plan
-│   ├── InteractiveMesh.tsx      # Canvas cursor-reactive mesh
-│   └── StarField.tsx            # Parallax star background
-│
-└── lib/
-    └── types.ts                 # AssessmentData & AnalysisResult types
-```
-
-<br/>
-
-## 🤖 AI Prompt Architecture
-
-The analysis prompt sent to Groq includes:
-
-- ✅ Candidate profile (role, experience, target companies)
-- ✅ Full resume text
-- ✅ Self-rated skill scores (calibrated by experience level)
-- ✅ **Live GitHub data** — bio, repos, languages, stars (fetched via GitHub API)
-- ✅ **Portfolio content** — scraped from the actual website
-- ✅ Communication self-rating
-
-The AI returns structured JSON scored across 4 dimensions with strengths, prioritised improvements, and a phased action plan. All personalised with specific details from your real profile.
-
-<br/>
-
-## 📄 License
-
-MIT © 2026 AI CareerForge
+MIT
