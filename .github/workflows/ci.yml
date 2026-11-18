@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Tests and type-checks only read the repository.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # backend and frontend import the compiled output of these two packages
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - name: Type-check backend
+        run: npx tsc --noEmit
+        working-directory: backend
+
+      - name: Type-check frontend
+        run: npx tsc --noEmit
+        working-directory: frontend
+
+      - name: Run all test suites
+        run: npm test
